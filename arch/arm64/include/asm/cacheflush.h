@@ -81,6 +81,7 @@ static inline void __inval_dcache_area(void *addr, size_t len)
 {
 	__inval_cache_range((unsigned long)addr, (unsigned long)addr + len);
 }
+extern void sync_icache_aliases(void *kaddr, unsigned long len);
 
 static inline void flush_cache_mm(struct mm_struct *mm)
 {
