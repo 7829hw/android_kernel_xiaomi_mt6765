@@ -317,6 +317,16 @@ static DECLARE_WORK(cpuset_hotplug_work, cpuset_hotplug_workfn);
 static DECLARE_WAIT_QUEUE_HEAD(cpuset_attach_wq);
 
 /*
+ * Cgroup v2 behavior is used when on default hierarchy or the
+ * cgroup_v2_mode flag is set.
+ */
+static inline bool is_in_v2_mode(void)
+{
+	return cgroup_subsys_on_dfl(cpuset_cgrp_subsys) ||
+	      (cpuset_cgrp_subsys.root->flags & CGRP_ROOT_CPUSET_V2_MODE);
+}
+
+/*
  * This is ugly, but preserves the userspace API for existing cpuset
  * users. If someone tries to mount the "cpuset" filesystem, we
  * silently switch it to mount "cgroup" instead
