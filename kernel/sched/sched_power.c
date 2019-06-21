@@ -84,6 +84,9 @@ mtk_cluster_max_usage(int cid, struct energy_env *eenv, int cpu_idx,
 		if (unlikely(cpu == eenv->cpu[cpu_idx].cpu_id))
 			util += eenv->util_delta;
 
+		util = uclamp_rq_util_with(cpu_rq(cpu), util,
+			cpu == eenv->cpu[cpu_idx].cpu_id ? eenv->p : NULL);
+
 		if (util >= max_util) {
 			max_util = util;
 			*max_cpu = cpu;
