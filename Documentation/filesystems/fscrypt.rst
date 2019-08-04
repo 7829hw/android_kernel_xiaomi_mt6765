@@ -370,7 +370,8 @@ FS_IOC_GET_ENCRYPTION_POLICY can fail with the following errors:
 - ``ENODATA``: the file is not encrypted
 - ``ENOTTY``: this type of filesystem does not implement encryption
 - ``EOPNOTSUPP``: the kernel was not configured with encryption
-  support for this filesystem
+  support for this filesystem, or the filesystem superblock has not
+  had encryption enabled on it
 
 Note: if you only need to know whether a file is encrypted or not, on
 most filesystems it is also possible to use the FS_IOC_GETFLAGS ioctl
