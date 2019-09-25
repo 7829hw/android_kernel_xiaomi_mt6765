@@ -336,6 +336,7 @@ extern unsigned int vmpressure_level_med;
 extern unsigned int vmpressure_level_critical;
 #endif
 
+extern unsigned long reclaim_pages(struct list_head *page_list);
 #ifdef CONFIG_NUMA
 extern int node_reclaim_mode;
 extern int sysctl_min_unmapped_ratio;
