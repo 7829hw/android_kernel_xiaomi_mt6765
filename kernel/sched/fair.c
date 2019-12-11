@@ -7338,6 +7338,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 * than the one required to boost the task.
 			 */
 			new_util = max(min_util, new_util);
+			new_util = uclamp_rq_util_with(cpu_rq(i), new_util, p);
 
 			/*
 			 * Include minimum capacity constraint:
@@ -7627,7 +7628,11 @@ static int wake_cap(struct task_struct *p, int cpu, int prev_cpu)
 	/* Bring task utilization in sync with prev_cpu */
 	sync_entity_load_avg(&p->se);
 
+#ifdef CONFIG_UCLAMP_TASK
+	return min_cap * 1024 < uclamp_task(p) * capacity_margin;
+#else
 	return min_cap * 1024 < task_util(p) * capacity_margin;
+#endif
 }
 
 static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync)
