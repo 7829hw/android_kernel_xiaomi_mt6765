@@ -116,3 +116,6 @@ SCHED_FEAT(FBT_STRICT_ORDER, true)
  * in post_init_entity_util_avg.
  */
 SCHED_FEAT(POST_INIT_UTIL, false)
+
+/* Preserve Android's opt-in policy for boosting all real-time tasks. */
+SCHED_FEAT(SUGOV_RT_MAX_FREQ, false)
