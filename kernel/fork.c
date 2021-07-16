@@ -1680,6 +1680,9 @@ static __latent_entropy struct task_struct *copy_process(
 			current->pid, current->comm, p);
 		goto fork_out;
 	}
+#ifdef CONFIG_BPF_SYSCALL
+	p->bpf_ctx = NULL;
+#endif
 
 	cpufreq_task_times_init(p);
 
