@@ -619,11 +619,13 @@ static __always_inline u32 __bpf_prog_run(const struct bpf_prog *prog,
 		u64 start = sched_clock();
 
 		ret = dfunc(ctx, prog->insnsi, prog->bpf_func);
-		stats = this_cpu_ptr(prog->aux->stats);
-		u64_stats_update_begin(&stats->syncp);
-		stats->cnt++;
-		stats->nsecs += sched_clock() - start;
-		u64_stats_update_end(&stats->syncp);
+		if (likely(prog->aux && prog->aux->stats)) {
+			stats = this_cpu_ptr(prog->aux->stats);
+			u64_stats_update_begin(&stats->syncp);
+			stats->cnt++;
+			stats->nsecs += sched_clock() - start;
+			u64_stats_update_end(&stats->syncp);
+		}
 	} else {
 		ret = dfunc(ctx, prog->insnsi, prog->bpf_func);
 	}
