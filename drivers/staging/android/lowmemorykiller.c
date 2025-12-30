@@ -298,7 +298,7 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 	struct zone *z;
 	enum zone_type zoneidx;
 	unsigned long accumulated_pages = 0;
-	u64 scale = (u64)totalram_pages;
+	u64 scale = (u64)totalram_pages();
 	int new_other_free = 0, new_other_file = 0;
 	int memory_pressure = 0;
 	int unreclaimable = 0;
@@ -343,9 +343,9 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 		 * Update if we go through ONLY lower zone(s) ACTUALLY
 		 * and scale in totalram_pages
 		 */
-		if (totalram_pages > accumulated_pages) {
+		if (totalram_pages() > accumulated_pages) {
 			do_div(scale, accumulated_pages);
-			if ((u64)totalram_pages >
+			if ((u64)totalram_pages() >
 			    (u64)accumulated_pages * scale)
 				scale += 1;
 			new_other_free *= scale;
@@ -390,7 +390,7 @@ static short lowmem_amr_check(int *to_be_aggressive, int other_file)
 
 #ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
 	/* Try to enable AMR when we have enough memory */
-	if (totalram_pages < ENABLE_AMR_RAMSIZE) {
+	if (totalram_pages() < ENABLE_AMR_RAMSIZE) {
 		*to_be_aggressive = 0;
 	} else {
 		i = lowmem_adj_size - 1;
