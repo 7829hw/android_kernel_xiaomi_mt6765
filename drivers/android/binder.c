@@ -7009,7 +7009,7 @@ static int __init init_binder_device(const char *name)
 static int __init binder_init(void)
 {
 	int ret;
-	char *device_name, *device_names, *device_tmp;
+	char *device_name, *device_names = NULL, *device_tmp;
 	struct binder_device *device;
 	struct hlist_node *tmp;
 
@@ -7063,22 +7063,26 @@ static int __init binder_init(void)
 #endif
 	}
 
-	/*
-	 * Copy the module_parameter string, because we don't want to
-	 * tokenize it in-place.
-	 */
-	device_names = kzalloc(strlen(binder_devices_param) + 1, GFP_KERNEL);
-	if (!device_names) {
-		ret = -ENOMEM;
-		goto err_alloc_device_names_failed;
-	}
-	strcpy(device_names, binder_devices_param);
+	if (!IS_ENABLED(CONFIG_ANDROID_BINDERFS) &&
+	    strcmp(binder_devices_param, "") != 0) {
+		/*
+		 * Copy the module_parameter string, because we don't want to
+		 * tokenize it in-place.
+		 */
+		device_names = kzalloc(strlen(binder_devices_param) + 1,
+				       GFP_KERNEL);
+		if (!device_names) {
+			ret = -ENOMEM;
+			goto err_alloc_device_names_failed;
+		}
+		strcpy(device_names, binder_devices_param);
 
-	device_tmp = device_names;
-	while ((device_name = strsep(&device_tmp, ","))) {
-		ret = init_binder_device(device_name);
-		if (ret)
-			goto err_init_binder_device_failed;
+		device_tmp = device_names;
+		while ((device_name = strsep(&device_tmp, ","))) {
+			ret = init_binder_device(device_name);
+			if (ret)
+				goto err_init_binder_device_failed;
+		}
 	}
 
 #ifdef BINDER_WATCHDOG
@@ -7086,17 +7090,9 @@ static int __init binder_init(void)
 	init_binder_transaction_log(
 		&binder_transaction_log, &binder_transaction_log_failed);
 #endif
-	/*
-	 * Keep legacy misc Binder devices active while validating BinderFS.
-	 * Registration failure must not remove Binder from Android until the
-	 * filesystem, device creation and SELinux labeling are verified.
-	 */
 	ret = init_binderfs();
-	if (ret) {
-		pr_warn("BinderFS initialization failed: %d; using legacy Binder devices\n",
-			ret);
-		ret = 0;
-	}
+	if (ret)
+		goto err_init_binder_device_failed;
 
 	return ret;
 
