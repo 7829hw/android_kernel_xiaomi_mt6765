@@ -197,6 +197,10 @@ static unsigned int ovl_throughput_freq_req;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
+/* last backlight level sent by primary_display_setbacklight() */
+static unsigned int primary_bl_last_level;
+static void _primary_display_restore_backlight(void);
+
 /* record take mutex time */
 static unsigned long long mutex_time_start;
 static unsigned long long mutex_time_end;
@@ -5132,6 +5136,8 @@ int primary_display_resume(void)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 		MMPROFILE_FLAG_PULSE, 0, 11);
 
+	_primary_display_restore_backlight();
+
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	/* update bandwidth */
 	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
@@ -7905,10 +7911,34 @@ int _set_backlight_by_cpu(unsigned int level)
 	return ret;
 }
 
+/*
+ * disp_lcm_resume() resets and re-initialises the panel, which loses the
+ * brightness sent before suspend (e.g. DCS 0x51 for an LCM-controlled
+ * backlight). Both primary_display_setbacklight() and the LED driver skip
+ * an unchanged level, so nothing would send it again. Called from
+ * primary_display_resume() with the primary path lock held.
+ */
+static void _primary_display_restore_backlight(void)
+{
+	unsigned int level = primary_bl_last_level;
+
+	if (!level)
+		return;
+
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
+		return;
+
+	if (primary_display_cmdq_enabled()) {
+		_set_backlight_by_cmdq(level);
+		atomic_set(&delayed_trigger_kick, 1);
+	} else {
+		_set_backlight_by_cpu(level);
+	}
+}
+
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
-	static unsigned int last_level;
 	bool aal_is_support = disp_aal_is_support();
 
 	DISPFUNC();
@@ -7918,7 +7948,7 @@ int primary_display_setbacklight(unsigned int level)
 		return 0;
 	}
 
-	if (last_level == level)
+	if (primary_bl_last_level == level)
 		return 0;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
@@ -7947,7 +7977,7 @@ int primary_display_setbacklight(unsigned int level)
 		} else {
 			_set_backlight_by_cpu(level);
 		}
-		last_level = level;
+		primary_bl_last_level = level;
 	}
 
 	if (aal_is_support == false) {
