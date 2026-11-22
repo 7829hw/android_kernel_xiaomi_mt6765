@@ -293,7 +293,7 @@ mtk_cfg80211_default_mgmt_stypes[NUM_NL80211_IFTYPES] = {
 #endif
 #endif
 
-static const struct iw_priv_args rP2PIwPrivTable[] = {
+static const struct iw_priv_args __maybe_unused rP2PIwPrivTable[] = {
 	{
 	 .cmd = IOC_P2P_CFG_DEVICE,
 	 .set_args = IW_PRIV_TYPE_BYTE
@@ -388,7 +388,7 @@ const struct iw_handler_def mtk_p2p_wext_handler_def = {
 #endif
 
 #ifdef CONFIG_PM
-static const struct wiphy_wowlan_support mtk_p2p_wowlan_support = {
+static const struct wiphy_wowlan_support __maybe_unused mtk_p2p_wowlan_support = {
 	.flags = WIPHY_WOWLAN_DISCONNECT | WIPHY_WOWLAN_ANY,
 };
 #endif
