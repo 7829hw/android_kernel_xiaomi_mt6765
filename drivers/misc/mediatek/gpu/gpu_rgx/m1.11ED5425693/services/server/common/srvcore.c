@@ -42,6 +42,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
 #include "img_defs.h"
+#if defined(__KERNEL__)
+#include <linux/compiler.h>	/* __nocfi */
+#endif
 #include "pvr_debug.h"
 #include "ra.h"
 #include "pvr_bridge.h"
@@ -1112,7 +1115,7 @@ void BridgeDispatcherDeinit(void)
 }
 
 
-PVRSRV_ERROR BridgedDispatchKM(CONNECTION_DATA * psConnection,
+PVRSRV_ERROR __nocfi BridgedDispatchKM(CONNECTION_DATA * psConnection,
                           PVRSRV_BRIDGE_PACKAGE   * psBridgePackageKM)
 {
 

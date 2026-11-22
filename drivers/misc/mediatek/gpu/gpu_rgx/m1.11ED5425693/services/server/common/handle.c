@@ -58,6 +58,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include "img_defs.h"
+#if defined(__KERNEL__)
+#include <linux/compiler.h>	/* __nocfi */
+#endif
 #include "handle.h"
 #include "handle_impl.h"
 #include "allocmem.h"
@@ -908,7 +911,7 @@ static PVRSRV_ERROR FreeHandleWrapper(PVRSRV_HANDLE_BASE *psBase, IMG_HANDLE hHa
  @Return	PVRSRV_OK or PVRSRV_ERROR
 
 ******************************************************************************/
-static PVRSRV_ERROR FreeHandle(PVRSRV_HANDLE_BASE *psBase,
+static PVRSRV_ERROR __nocfi FreeHandle(PVRSRV_HANDLE_BASE *psBase,
 			       IMG_HANDLE hHandle,
 			       PVRSRV_HANDLE_TYPE eType,
 			       void **ppvData)
@@ -2036,7 +2039,7 @@ static PVRSRV_ERROR FreeKernelHandlesWrapperIterProcess(IMG_HANDLE hHandle, void
 	return PVRSRV_OK;
 }
 
-static PVRSRV_ERROR FreeHandleDataWrapper(IMG_HANDLE hHandle, void *pvData)
+static PVRSRV_ERROR __nocfi FreeHandleDataWrapper(IMG_HANDLE hHandle, void *pvData)
 {
 	FREE_HANDLE_DATA *psData = (FREE_HANDLE_DATA *)pvData;
 	HANDLE_DATA *psHandleData = NULL;

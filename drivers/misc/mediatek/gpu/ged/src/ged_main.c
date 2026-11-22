@@ -105,7 +105,7 @@ static ssize_t ged_write(struct file *filp, const char __user *buf, size_t count
 	return 0;
 }
 
-static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackageKM)
+static long __nocfi ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackageKM)
 {
 	int ret = -EFAULT;
 	void *pvIn = NULL, *pvOut = NULL;
