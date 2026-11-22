@@ -65,6 +65,15 @@ static int mtkfb_set_backlight_level(unsigned int level)
 }
 #endif /* CONFIG_BACKLIGHT_SUPPORT_LM3697 */
 
+/*
+ * MT65XX_LED_MODE_CUST_LCM calls the backlight hook as a
+ * cust_brightness_set, which takes the level and the divider.
+ */
+static int __maybe_unused mt_leds_lcm_set_backlight(int level, int div)
+{
+	return mtkfb_set_backlight_level(level);
+}
+
 #ifndef CONFIG_MTK_PWM
 s32 pwm_set_spec_config(struct pwm_spec_config *conf)
 {
@@ -308,7 +317,7 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 					    ("BL set by chargepump\n");
 #else
 					pled_dtsi[i].data =
-					    (long)mtkfb_set_backlight_level;
+					    (long)mt_leds_lcm_set_backlight;
 #endif /* CONFIG_BACKLIGHT_SUPPORT_LM3697 */
 					LEDS_DEBUG
 					    ("kernel:the BL hw mode is LCM.\n");
