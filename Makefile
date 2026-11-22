@@ -715,6 +715,8 @@ endif
 ifdef CONFIG_LTO
 lto-flags	:= $(lto-clang-flags)
 KBUILD_CFLAGS	+= $(lto-flags)
+CC_FLAGS_LTO	:= $(lto-flags)
+export CC_FLAGS_LTO
 
 DISABLE_LTO	:= $(DISABLE_LTO_CLANG)
 export DISABLE_LTO
@@ -745,6 +747,8 @@ ifdef CONFIG_CFI
 # cfi-flags are re-tested in prepare-compiler-check
 cfi-flags	:= $(cfi-clang-flags)
 KBUILD_CFLAGS	+= $(cfi-flags)
+CC_FLAGS_CFI	:= $(cfi-flags)
+export CC_FLAGS_CFI
 
 DISABLE_CFI	:= $(DISABLE_CFI_CLANG)
 DISABLE_LTO	+= $(DISABLE_CFI)
