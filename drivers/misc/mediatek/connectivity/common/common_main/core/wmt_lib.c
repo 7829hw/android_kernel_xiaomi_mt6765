@@ -163,6 +163,12 @@ INT32 __weak mtk_wcn_consys_stp_btif_dpidle_ctrl(enum _ENUM_BTIF_DPIDLE_ en_flag
 	return 0;
 }
 
+/* deep_idle_ctrl_cb passes the BTIF deep idle state as a UINT32. */
+static INT32 wmt_lib_btif_dpidle_ctrl(UINT32 en_flag)
+{
+	return mtk_wcn_consys_stp_btif_dpidle_ctrl((enum _ENUM_BTIF_DPIDLE_)en_flag);
+}
+
 INT32 wmt_lib_wlan_lock_aquire(VOID)
 {
 	return osal_lock_sleepable_lock(&gDevWmt.wlan_lock);
@@ -430,7 +436,7 @@ INT32 wmt_lib_init(VOID)
 	/*6. register function control callback to WMT-PLAT */
 	wmt_plat_func_ctrl_cb_reg(mtk_wcn_wmt_func_ctrl_for_plat);
 
-	wmt_plat_deep_idle_ctrl_cb_reg(mtk_wcn_consys_stp_btif_dpidle_ctrl);
+	wmt_plat_deep_idle_ctrl_cb_reg(wmt_lib_btif_dpidle_ctrl);
 	/*7 reset gps/bt state */
 
 	mtk_wcn_wmt_system_state_reset();

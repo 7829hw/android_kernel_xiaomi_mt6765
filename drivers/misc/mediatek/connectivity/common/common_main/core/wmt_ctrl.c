@@ -44,6 +44,12 @@
 #include "wmt_ic.h"
 #include "wmt_step.h"
 
+/* Called by BTIF through MTK_WCN_BTIF_RX_CB, which takes a const buffer. */
+static int wmt_ctrl_stp_btif_rx_cb(const unsigned char *p_buf, unsigned int len)
+{
+	return mtk_wcn_stp_parser_data((PUINT8)p_buf, len);
+}
+
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -551,7 +557,7 @@ INT32 wmt_ctrl_stp_open(P_WMT_CTRL_DATA pWmtCtrlData)
 		}
 
 		/*register stp rx call back to btif */
-		iRet = mtk_wcn_stp_rxcb_register((MTK_WCN_BTIF_RX_CB) mtk_wcn_stp_parser_data);
+		iRet = mtk_wcn_stp_rxcb_register(wmt_ctrl_stp_btif_rx_cb);
 		if (iRet) {
 			WMT_WARN_FUNC("mtk_wcn_stp_rxcb_register fail(%d)\n", iRet);
 			return -2;
