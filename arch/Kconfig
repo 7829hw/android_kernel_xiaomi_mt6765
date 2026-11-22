@@ -503,6 +503,15 @@ config ARCH_SUPPORTS_LTO_CLANG
 	  - compiling inline assembly with clang's integrated assembler,
 	  - and linking with LLD.
 
+config ARCH_SUPPORTS_THINLTO
+	bool
+
+config THINLTO
+	bool "Use Clang ThinLTO"
+	depends on LTO_CLANG && ARCH_SUPPORTS_THINLTO
+	help
+	  Use ThinLTO to reduce link time and memory use compared to full LTO.
+
 choice
 	prompt "Link-Time Optimization (LTO) (EXPERIMENTAL)"
 	default LTO_NONE

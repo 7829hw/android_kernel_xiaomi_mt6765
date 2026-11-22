@@ -674,11 +674,9 @@ CFLAGS_KCOV	:= $(call cc-option,-fsanitize-coverage=trace-pc,)
 export CFLAGS_GCOV CFLAGS_KCOV
 
 ifdef CONFIG_LTO_CLANG
-# LLD links LLVM IR directly. Use LLVM tools for the bitcode archives and
-# for reading symbol versions and exports before the LTO link.
+# LLD links LLVM IR directly. Use llvm-ar for the bitcode archive indexes.
 LLVM_AR		:= $(LLVM_PREFIX)llvm-ar$(LLVM_SUFFIX)
-LLVM_DIS	:= $(LLVM_PREFIX)llvm-dis$(LLVM_SUFFIX)
-export LLVM_AR LLVM_DIS
+export LLVM_AR
 endif
 
 # The arch Makefile can set ARCH_{CPP,A,C}FLAGS to override the default
@@ -702,7 +700,12 @@ KBUILD_CFLAGS	+= $(call cc-option,-fdata-sections,)
 endif
 
 ifdef CONFIG_LTO_CLANG
+ifdef CONFIG_THINLTO
+lto-clang-flags	:= -flto=thin -fsplit-lto-unit -fvisibility=default
+else
 lto-clang-flags	:= -flto -fvisibility=hidden
+endif
+KBUILD_LDFLAGS_MODULE += -T $(srctree)/scripts/module-lto.lds
 
 # allow disabling only clang LTO where needed
 DISABLE_LTO_CLANG := -fno-lto -fvisibility=default
@@ -1114,7 +1117,8 @@ ARCH_POSTLINK := $(wildcard $(srctree)/arch/$(SRCARCH)/Makefile.postlink)
 	$(CONFIG_SHELL) $< $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux) ;       \
 	$(if $(ARCH_POSTLINK), $(MAKE) -f $(ARCH_POSTLINK) $@, true)
 
-vmlinux: scripts/link-vmlinux.sh vmlinux_prereq $(vmlinux-deps) FORCE
+vmlinux: scripts/link-vmlinux.sh vmlinux_prereq $(vmlinux-deps) \
+	 $(if $(CONFIG_LTO_CLANG),$(srctree)/scripts/generate_initcall_order.pl) FORCE
 	+$(call if_changed,link-vmlinux)
 
 # Build samples along the rest of the kernel
