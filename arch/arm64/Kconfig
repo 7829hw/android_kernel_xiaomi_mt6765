@@ -437,6 +437,7 @@ config ARM64_ERRATUM_855873
 	  erratum 855873 on Cortex-A53 parts up to r0p4.
 	  Because of this erratum, the processor might issue an eviction and
 	  an L2 cache clean operation to the interconnect in the wrong order.
+
 	  If unsure, say Y.
 
 config ARM64_ERRATUM_1024718
@@ -791,7 +792,7 @@ config FORCE_MAX_ZONEORDER
 
 config UNMAP_KERNEL_AT_EL0
 	bool "Unmap kernel when running in userspace (aka \"KAISER\")" if EXPERT
-	default n
+	default y
 	help
 	  Speculation attacks against some high-performance processors can
 	  be used to bypass MMU permission checks and leak kernel data to

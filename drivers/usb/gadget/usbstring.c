@@ -65,7 +65,7 @@ usb_gadget_get_string (struct usb_gadget_strings *table, int id, u8 *buf)
 	/* string descriptors have length, tag, then UTF16-LE text */
 	str = s->s;
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
-	if (id == serial_idx && serial_string[0])
+	if (id == serial_idx && serial_string && serial_string[0])
 		str = serial_string;
 #endif
 	len = min((size_t)USB_MAX_STRING_LEN, strlen(str));
