@@ -501,7 +501,7 @@ config ARCH_SUPPORTS_LTO_CLANG
 	  An architecture should select this option it supports:
 	  - compiling with clang,
 	  - compiling inline assembly with clang's integrated assembler,
-	  - and linking with either lld or GNU gold w/ LLVMgold.
+	  - and linking with LLD.
 
 choice
 	prompt "Link-Time Optimization (LTO) (EXPERIMENTAL)"
@@ -527,9 +527,7 @@ config LTO_CLANG
           files, and the actual compilation from IR occurs at the LTO link step,
           which may take several minutes.
 
-          If you select this option, you must compile the kernel with clang >=
-          5.0 (make CC=clang) and GNU gold from binutils >= 2.27, and have the
-          LLVMgold plug-in in LD_LIBRARY_PATH.
+          Build with LLVM=1 to use Clang, LLD, and the LLVM bitcode tools.
 
 endchoice
 

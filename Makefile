@@ -370,7 +370,6 @@ OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
 READELF		= $(CROSS_COMPILE)readelf
 endif
-LDGOLD		= $(CROSS_COMPILE)ld.gold
 CPP		= $(CC) -E
 KBUILD_HOSTLDFLAGS += $(HOSTLDFLAGS)
 AWK		= awk
@@ -674,17 +673,11 @@ CFLAGS_GCOV	:= -fprofile-arcs -ftest-coverage -fno-tree-loop-im $(call cc-disabl
 CFLAGS_KCOV	:= $(call cc-option,-fsanitize-coverage=trace-pc,)
 export CFLAGS_GCOV CFLAGS_KCOV
 
-# Make toolchain changes before including arch/$(SRCARCH)/Makefile to ensure
-# ar/cc/ld-* macros return correct values.
 ifdef CONFIG_LTO_CLANG
-# use GNU gold with LLVMgold for LTO linking, and LD for vmlinux_link
-LDFINAL_vmlinux := $(LD)
-LD		:= $(LDGOLD)
-LDFLAGS		+= -plugin LLVMgold.so
-# use llvm-ar for building symbol tables from IR files, and llvm-dis instead
-# of objdump for processing symbol versions and exports
-LLVM_AR		:= llvm-ar
-LLVM_DIS	:= llvm-dis
+# LLD links LLVM IR directly. Use LLVM tools for the bitcode archives and
+# for reading symbol versions and exports before the LTO link.
+LLVM_AR		:= $(LLVM_PREFIX)llvm-ar$(LLVM_SUFFIX)
+LLVM_DIS	:= $(LLVM_PREFIX)llvm-dis$(LLVM_SUFFIX)
 export LLVM_AR LLVM_DIS
 endif
 
@@ -1221,8 +1214,8 @@ ifdef CONFIG_LTO_CLANG
   ifneq ($(call clang-ifversion, -ge, 0500, y), y)
 	@echo Cannot use CONFIG_LTO_CLANG: requires clang 5.0 or later >&2 && exit 1
   endif
-  ifneq ($(call gold-ifversion, -ge, 112000000, y), y)
-	@echo Cannot use CONFIG_LTO_CLANG: requires GNU gold 1.12 or later >&2 && exit 1
+  ifneq ($(ld-name),lld)
+	@echo Cannot use CONFIG_LTO_CLANG: requires ld.lld >&2 && exit 1
   endif
 endif
 # Make sure compiler supports LTO flags
