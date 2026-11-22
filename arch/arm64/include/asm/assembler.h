@@ -379,7 +379,14 @@ alternative_endif
 	sub	\tmp2, \tmp1, #1
 	bic	\kaddr, \kaddr, \tmp2
 9998:
-	.if	(\op == cvau || \op == cvac)
+	.set	.Lclean_cache\@, 0
+	.ifc	\op, cvau
+	.set	.Lclean_cache\@, 1
+	.endif
+	.ifc	\op, cvac
+	.set	.Lclean_cache\@, 1
+	.endif
+	.if	.Lclean_cache\@
 alternative_if_not ARM64_WORKAROUND_CLEAN_CACHE
 	dc	\op, \kaddr
 alternative_else
