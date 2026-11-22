@@ -197,6 +197,8 @@ static unsigned long kallsyms_sym_address(int idx)
 	return kallsyms_relative_base - 1 - kallsyms_offsets[idx];
 }
 
+static inline void cleanup_symbol_name(char *s);
+
 /* Lookup the address for this symbol. Returns 0 if not found. */
 unsigned long kallsyms_lookup_name(const char *name)
 {
@@ -207,6 +209,11 @@ unsigned long kallsyms_lookup_name(const char *name)
 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
 		off = kallsyms_expand_symbol(off, namebuf, ARRAY_SIZE(namebuf));
 
+		if (strcmp(namebuf, name) == 0)
+			return kallsyms_sym_address(i);
+
+		/* Match names that ThinLTO or CFI gave a suffix, as printed. */
+		cleanup_symbol_name(namebuf);
 		if (strcmp(namebuf, name) == 0)
 			return kallsyms_sym_address(i);
 	}
