@@ -60,16 +60,14 @@ static int _btif_irq_free(struct _MTK_BTIF_IRQ_STR_ *p_irq, void *data);
 static int _btif_irq_ctrl(struct _MTK_BTIF_IRQ_STR_ *p_irq, bool en);
 static int _btif_irq_ctrl_sync(struct _MTK_BTIF_IRQ_STR_ *p_irq, bool en);
 static irqreturn_t btif_irq_handler(int irq, void *data);
-static unsigned int btif_pio_rx_data_receiver(
-				       struct _MTK_BTIF_INFO_STR_ *p_btif_info,
+static unsigned int btif_pio_rx_data_receiver(void *p_btif_info,
 				       unsigned char *p_buf,
 				       unsigned int buf_len);
 
 static irqreturn_t btif_tx_dma_irq_handler(int irq, void *data);
 static irqreturn_t btif_rx_dma_irq_handler(int irq, void *data);
 
-static unsigned int btif_dma_rx_data_receiver(
-				       struct _MTK_DMA_INFO_STR_ *p_dma_info,
+static unsigned int btif_dma_rx_data_receiver(void *p_dma_info,
 				       unsigned char *p_buf,
 				       unsigned int buf_len);
 static int _btif_controller_tx_setup(struct _mtk_btif_ *p_btif);
@@ -1134,7 +1132,7 @@ irqreturn_t btif_rx_dma_irq_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-unsigned int btif_dma_rx_data_receiver(struct _MTK_DMA_INFO_STR_ *p_dma_info,
+unsigned int btif_dma_rx_data_receiver(void *p_dma_info,
 				       unsigned char *p_buf,
 				       unsigned int buf_len)
 {
@@ -1153,7 +1151,7 @@ unsigned int btif_dma_rx_data_receiver(struct _MTK_DMA_INFO_STR_ *p_dma_info,
 	return 0;
 }
 
-unsigned int btif_pio_rx_data_receiver(struct _MTK_BTIF_INFO_STR_ *p_btif_info,
+unsigned int btif_pio_rx_data_receiver(void *p_btif_info,
 				       unsigned char *p_buf,
 				       unsigned int buf_len)
 {
@@ -1361,7 +1359,7 @@ int _btif_rx_dma_setup(struct _mtk_btif_ *p_btif)
 	hal_btif_dma_hw_init(p_dma_info);
 
 	hal_btif_dma_rx_cb_reg(p_dma_info,
-			       (dma_rx_buf_write) btif_dma_rx_data_receiver);
+			       btif_dma_rx_data_receiver);
 
 /*DMA controller enable*/
 	i_ret = hal_btif_dma_ctrl(p_dma_info, DMA_CTRL_ENABLE);
@@ -1527,7 +1525,7 @@ int _btif_controller_setup(struct _mtk_btif_ *p_btif)
 	BBS_INIT(&(p_btif->btif_buf));
 /************************************************/
 	hal_btif_rx_cb_reg(p_btif_info,
-			   (btif_rx_buf_write) btif_pio_rx_data_receiver);
+			   btif_pio_rx_data_receiver);
 
 	i_ret = hal_btif_clk_ctrl(p_btif_info, CLK_OUT_ENABLE);
 	if (i_ret) {
