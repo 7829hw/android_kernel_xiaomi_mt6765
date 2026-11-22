@@ -18,7 +18,7 @@ ifeq ($(CONFIG_RELOCATABLE), y)
 # Pass --no-apply-dynamic-relocs to restore pre-binutils-2.27 behaviour
 # for relative relocs, since this leads to better Image compression
 # with the relocation offsets always being zero.
-LDFLAGS_vmlinux		+= -pie -shared -Bsymbolic \
+LDFLAGS_vmlinux		+= -shared -Bsymbolic -z notext -z norelro \
 			$(call ld-option, --no-apply-dynamic-relocs)
 endif
 
@@ -52,35 +52,20 @@ endif
 
 ifeq ($(CONFIG_COMPAT_VDSO), y)
   CROSS_COMPILE_ARM32 ?= $(CONFIG_CROSS_COMPILE_ARM32:"%"=%)
-
-  # Check that the user has provided a valid prefix for the 32-bit toolchain.
-  # To prevent selecting the system $(cc-name) by default, the prefix is not
-  # allowed to be empty, unlike CROSS_COMPILE. In the unlikely event that the
-  # system $(cc-name) is actually the 32-bit ARM compiler to be used, the
-  # variable can be set to the dirname (e.g. CROSS_COMPILE_ARM32=/usr/bin/).
-  # Note: this Makefile is read both before and after regenerating the config
-  # (if needed). Any warning appearing before the config has been regenerated
-  # should be ignored. If the error is triggered and you set
-  # CONFIG_CROSS_COMPILE_ARM32, set CROSS_COMPILE_ARM32 to an appropriate value
-  # when invoking make and fix CONFIG_CROSS_COMPILE_ARM32.
-  ifeq ($(CROSS_COMPILE_ARM32),)
-    $(error CROSS_COMPILE_ARM32 not defined or empty, the compat vDSO will not be built)
-  else ifeq ($(cc-name),clang)
-    export CLANG_TRIPLE_ARM32 ?= $(CROSS_COMPILE_ARM32)
+  ifeq ($(cc-name),clang)
+    export CLANG_TRIPLE_ARM32 ?= arm-linux-gnueabi-
     export CLANG_TARGET_ARM32 := --target=$(notdir $(CLANG_TRIPLE_ARM32:%-=%))
-    export GCC_TOOLCHAIN32_DIR := $(dir $(shell which $(CROSS_COMPILE_ARM32)ld))
-    export GCC_TOOLCHAIN32 := $(realpath $(GCC_TOOLCHAIN32_DIR)/..)
-    export CLANG_PREFIX32 := --prefix=$(GCC_TOOLCHAIN32_DIR)$(notdir $(CROSS_COMPILE_ARM32))
-    export CLANG_GCC32_TC := --gcc-toolchain=$(GCC_TOOLCHAIN32)
-    export CONFIG_VDSO32 := y
-    vdso32 := -DCONFIG_VDSO32=1
-  else ifeq ($(shell which $(CROSS_COMPILE_ARM32)$(cc-name) 2> /dev/null),)
-    $(error $(CROSS_COMPILE_ARM32)$(cc-name) not found, check CROSS_COMPILE_ARM32)
   else
+    ifeq ($(CROSS_COMPILE_ARM32),)
+      $(error CROSS_COMPILE_ARM32 is required to build the compat vDSO with GCC)
+    endif
+    ifeq ($(shell command -v $(CROSS_COMPILE_ARM32)gcc),)
+      $(error $(CROSS_COMPILE_ARM32)gcc not found, check CROSS_COMPILE_ARM32)
+    endif
     export CROSS_COMPILE_ARM32
-    export CONFIG_VDSO32 := y
-    vdso32 := -DCONFIG_VDSO32=1
   endif
+  export CONFIG_VDSO32 := y
+  vdso32 := -DCONFIG_VDSO32=1
 endif
 
 ifeq ($(cc-name),clang)
@@ -98,13 +83,15 @@ KBUILD_AFLAGS	+= $(lseinstr) $(vdso32)
 
 ifeq ($(CONFIG_CPU_BIG_ENDIAN), y)
 KBUILD_CPPFLAGS	+= -mbig-endian
-AS		+= -EB
+AS		+= $(if $(LLVM),-mbig-endian,-EB)
 LD		+= -EB
+LDFLAGS		+= -maarch64elfb
 UTS_MACHINE	:= aarch64_be
 else
 KBUILD_CPPFLAGS	+= -mlittle-endian
-AS		+= -EL
+AS		+= $(if $(LLVM),-mlittle-endian,-EL)
 LD		+= -EL
+LDFLAGS		+= -maarch64elf
 UTS_MACHINE	:= aarch64
 endif
 

@@ -301,8 +301,6 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-HOSTCC       = gcc
-HOSTCXX      = g++
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
 HOSTCXXFLAGS = -O2
 
@@ -336,17 +334,45 @@ export KBUILD_CHECKSRC KBUILD_SRC KBUILD_EXTMOD
 scripts/Kbuild.include: ;
 include scripts/Kbuild.include
 
-# Make variables (CC, etc...)
+# Accept the LLVM tool names, a tool directory ending in /, or a version suffix.
+ifneq ($(LLVM),)
+ifneq ($(filter %/,$(LLVM)),)
+LLVM_PREFIX := $(LLVM)
+else ifneq ($(filter -%,$(LLVM)),)
+LLVM_SUFFIX := $(LLVM)
+endif
+
+HOSTCC		= $(LLVM_PREFIX)clang$(LLVM_SUFFIX)
+HOSTCXX		= $(LLVM_PREFIX)clang++$(LLVM_SUFFIX)
+HOSTLD		= $(LLVM_PREFIX)ld.lld$(LLVM_SUFFIX)
+AS		= $(CC) $(CLANG_FLAGS) -c -x assembler
+LD		= $(LLVM_PREFIX)ld.lld$(LLVM_SUFFIX)
+CC		= $(LLVM_PREFIX)clang$(LLVM_SUFFIX)
+AR		= $(LLVM_PREFIX)llvm-ar$(LLVM_SUFFIX)
+NM		= $(LLVM_PREFIX)llvm-nm$(LLVM_SUFFIX)
+STRIP		= $(LLVM_PREFIX)llvm-strip$(LLVM_SUFFIX)
+OBJCOPY		= $(LLVM_PREFIX)llvm-objcopy$(LLVM_SUFFIX)
+OBJDUMP		= $(LLVM_PREFIX)llvm-objdump$(LLVM_SUFFIX)
+READELF		= $(LLVM_PREFIX)llvm-readelf$(LLVM_SUFFIX)
+export CLANG_LDFLAGS := --ld-path=$(LD)
+KBUILD_HOSTLDFLAGS := --ld-path=$(HOSTLD)
+else
+HOSTCC		= gcc
+HOSTCXX		= g++
+HOSTLD		= ld
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
-LDGOLD		= $(CROSS_COMPILE)ld.gold
 CC		= $(CROSS_COMPILE)gcc
-CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
+READELF		= $(CROSS_COMPILE)readelf
+endif
+LDGOLD		= $(CROSS_COMPILE)ld.gold
+CPP		= $(CC) -E
+KBUILD_HOSTLDFLAGS += $(HOSTLDFLAGS)
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
@@ -405,7 +431,8 @@ KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(S
 
 export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
-export CPP AR NM STRIP OBJCOPY OBJDUMP
+export CPP AR NM STRIP OBJCOPY OBJDUMP READELF
+export HOSTLD KBUILD_HOSTLDFLAGS
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
 
@@ -503,25 +530,34 @@ ifneq ($(filter install,$(MAKECMDGOALS)),)
 endif
 
 ifeq ($(cc-name),clang)
-ifneq ($(CROSS_COMPILE),)
+ifneq ($(LLVM),)
+ifeq ($(SRCARCH),arm64)
+CLANG_TRIPLE	?= aarch64-linux-gnu-
+else ifeq ($(SRCARCH),arm)
+CLANG_TRIPLE	?= arm-linux-gnueabi-
+else
 CLANG_TRIPLE	?= $(CROSS_COMPILE)
+endif
+else
+CLANG_TRIPLE	?= $(CROSS_COMPILE)
+ifneq ($(CROSS_COMPILE),)
+GCC_TOOLCHAIN_DIR := $(dir $(shell command -v $(CROSS_COMPILE)elfedit))
+ifneq ($(GCC_TOOLCHAIN_DIR),)
+CLANG_FLAGS	+= --prefix=$(GCC_TOOLCHAIN_DIR)$(notdir $(CROSS_COMPILE))
+CLANG_FLAGS	+= --gcc-toolchain=$(realpath $(GCC_TOOLCHAIN_DIR)/..)
+endif
+endif
+endif
+ifneq ($(CLANG_TRIPLE),)
 CLANG_FLAGS	+= --target=$(notdir $(CLANG_TRIPLE:%-=%))
 ifeq ($(shell $(srctree)/scripts/clang-android.sh $(CC) $(CLANG_FLAGS)), y)
-$(error "Clang with Android --target detected. Did you specify CLANG_TRIPLE?")
+$(error Clang with Android --target detected. Set CLANG_TRIPLE to a GNU target.)
 endif
-GCC_TOOLCHAIN_DIR := $(dir $(shell which $(CROSS_COMPILE)elfedit))
-CLANG_FLAGS	+= --prefix=$(GCC_TOOLCHAIN_DIR)$(notdir $(CROSS_COMPILE))
-GCC_TOOLCHAIN	:= $(realpath $(GCC_TOOLCHAIN_DIR)/..)
 endif
-ifneq ($(GCC_TOOLCHAIN),)
-CLANG_FLAGS	+= --gcc-toolchain=$(GCC_TOOLCHAIN)
-endif
-CLANG_FLAGS	+= -no-integrated-as
-CLANG_FLAGS	+= -Werror=unknown-warning-option
+CLANG_FLAGS	+= -fintegrated-as -Werror=unknown-warning-option
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 KBUILD_AFLAGS	+= $(CLANG_FLAGS)
 endif
-
 
 ifeq ($(mixed-targets),1)
 # ===========================================================================
@@ -1157,7 +1193,7 @@ prepare: prepare0 prepare-objtool
 
 ifdef CONFIG_STACK_VALIDATION
   has_libelf := $(call try-run,\
-		echo "int main() {}" | $(HOSTCC) -xc -o /dev/null -lelf -,1,0)
+		echo "int main() {}" | $(HOSTCC) $(KBUILD_HOSTLDFLAGS) -xc -o /dev/null -lelf -,1,0)
   ifeq ($(has_libelf),1)
     objtool_target := tools/objtool FORCE
   else
