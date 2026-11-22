@@ -2,6 +2,7 @@
 #include <linux/export.h>
 #include <linux/mqueue.h>
 #include <linux/sched.h>
+#include <linux/scs.h>
 #include <linux/sched/sysctl.h>
 #include <linux/sched/rt.h>
 #include <linux/init.h>
@@ -13,6 +14,13 @@
 
 static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
 static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+
+#ifdef CONFIG_SHADOW_CALL_STACK
+unsigned long init_shadow_call_stack[SCS_SIZE / sizeof(long)]
+	__aligned(SCS_SIZE) = {
+	[SCS_SIZE / sizeof(long) - 1] = SCS_END_MAGIC
+};
+#endif
 
 /* Initial task structure */
 struct task_struct init_task = INIT_TASK(init_task);

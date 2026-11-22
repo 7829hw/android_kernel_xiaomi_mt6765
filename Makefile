@@ -751,6 +751,12 @@ DISABLE_LTO	+= $(DISABLE_CFI)
 export DISABLE_CFI
 endif
 
+ifdef CONFIG_SHADOW_CALL_STACK
+CC_FLAGS_SCS	:= -fsanitize=shadow-call-stack
+KBUILD_CFLAGS	+= $(CC_FLAGS_SCS)
+export CC_FLAGS_SCS
+endif
+
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized,)
@@ -1227,6 +1233,11 @@ ifdef lto-flags
   ifeq ($(call cc-option, $(lto-flags)),)
 	@echo Cannot use CONFIG_LTO: $(lto-flags) not supported by compiler \
 		>&2 && exit 1
+  endif
+endif
+ifdef CONFIG_SHADOW_CALL_STACK
+  ifeq ($(call cc-option, $(CC_FLAGS_SCS)),)
+	@echo Cannot use CONFIG_SHADOW_CALL_STACK: compiler lacks shadow call stack support >&2 && exit 1
   endif
 endif
 # Make sure compiler supports requested stack protector flag.

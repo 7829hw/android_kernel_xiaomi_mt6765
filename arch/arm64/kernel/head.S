@@ -37,6 +37,7 @@
 #include <asm/pgtable-hwdef.h>
 #include <asm/pgtable.h>
 #include <asm/page.h>
+#include <asm/scs.h>
 #include <asm/smp.h>
 #include <asm/sysreg.h>
 #include <asm/thread_info.h>
@@ -430,6 +431,9 @@ __primary_switched:
 	add	sp, x4, #THREAD_SIZE
 	adr_l	x5, init_task
 	msr	sp_el0, x5			// Save thread_info
+#ifdef CONFIG_SHADOW_CALL_STACK
+	adr_l	scs_sp, init_shadow_call_stack
+#endif
 
 	adr_l	x8, vectors			// load VBAR_EL1 with virtual
 	msr	vbar_el1, x8			// vector table address
@@ -693,6 +697,9 @@ __secondary_switched:
 	mov	sp, x1
 	ldr	x2, [x0, #CPU_BOOT_TASK]
 	msr	sp_el0, x2
+#ifdef CONFIG_SHADOW_CALL_STACK
+	ldr	scs_sp, [x2, #TSK_TI_SCS_BASE]
+#endif
 	mov	x29, #0
 	b	secondary_start_kernel
 ENDPROC(__secondary_switched)

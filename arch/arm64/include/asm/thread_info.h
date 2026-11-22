@@ -53,13 +53,27 @@ struct thread_info {
 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
 	void			*regs_on_excp;	/* aee */
 	int			cpu_excp;	/* aee */
+#ifdef CONFIG_SHADOW_CALL_STACK
+	void			*scs_base;
+	void			*scs_sp;
+#endif
 };
+
+#ifdef CONFIG_SHADOW_CALL_STACK
+extern unsigned long init_shadow_call_stack[];
+#define INIT_SCS							\
+	.scs_base	= init_shadow_call_stack,			\
+	.scs_sp		= init_shadow_call_stack,
+#else
+#define INIT_SCS
+#endif
 
 #define INIT_THREAD_INFO(tsk)						\
 {									\
 	.preempt_count	= INIT_PREEMPT_COUNT,				\
 	.addr_limit	= KERNEL_DS,					\
 	.cpu_excp	= 0,	/* aee */				\
+	INIT_SCS							\
 }
 
 #define init_stack		(init_thread_union.stack)

@@ -44,10 +44,8 @@ alternative_else_nop_endif
 	ldp	x14, x15, [x1, #96]
 	ldp	x16, x17, [x1, #112]
 
-	mov	x18, #(PAGE_SIZE - 128)
 	add	x1, x1, #128
 1:
-	subs	x18, x18, #128
 
 alternative_if ARM64_HAS_NO_HW_PREFETCH
 	prfm    pldl1strm, [x1, #384]
@@ -73,7 +71,8 @@ alternative_else_nop_endif
 	add	x0, x0, #128
 	add	x1, x1, #128
 
-	b.gt	1b
+	tst	x1, #(PAGE_SIZE - 1)
+	b.ne	1b
 
 	stnp	x2, x3, [x0]
 	stnp	x4, x5, [x0, #16]

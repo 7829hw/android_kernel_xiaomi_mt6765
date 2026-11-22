@@ -24,6 +24,7 @@
 #include <linux/efi.h>
 #include <linux/export.h>
 #include <linux/sched.h>
+#include <linux/scs.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/stddef.h>
@@ -444,6 +445,8 @@ struct task_struct *__switch_to(struct task_struct *prev,
 	contextidr_thread_switch(next);
 	entry_task_switch(next);
 	uao_thread_switch(next);
+	if (unlikely(task_scs_end_corrupted(next)))
+		panic("corrupted shadow call stack in context switch\n");
 
 	/*
 	 * Complete any pending TLB or cache maintenance on this CPU in case

@@ -568,6 +568,22 @@ config CFI_CLANG_SHADOW
 	  If you select this option, the kernel builds a fast look-up table of
 	  CFI check functions in loaded modules to reduce overhead.
 
+config ARCH_SUPPORTS_SHADOW_CALL_STACK
+	bool
+
+config SHADOW_CALL_STACK
+	bool "Clang Shadow Call Stack"
+	depends on ARCH_SUPPORTS_SHADOW_CALL_STACK
+	depends on THREAD_INFO_IN_TASK
+	depends on !KVM && !EFI
+	help
+	  Use a separate stack to protect return addresses. The compiler
+	  reserves a register for the shadow stack pointer, which ARM64
+	  switches across tasks, userspace, and interrupt handlers.
+
+	  This option requires a compiler that supports shadow call stacks.
+	  Loadable modules must be built with the same kernel configuration.
+
 config HAVE_ARCH_WITHIN_STACK_FRAMES
 	bool
 	help

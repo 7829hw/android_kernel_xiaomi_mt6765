@@ -46,6 +46,12 @@ int main(void)
 #endif
   DEFINE(TI_CPU_EXCP,		offsetof(struct thread_info, cpu_excp));
   DEFINE(TI_REGS_ON_EXCP,	offsetof(struct thread_info, regs_on_excp));
+#ifdef CONFIG_SHADOW_CALL_STACK
+	DEFINE(TSK_TI_SCS_BASE,
+	       offsetof(struct task_struct, thread_info.scs_base));
+	DEFINE(TSK_TI_SCS_SP,
+	       offsetof(struct task_struct, thread_info.scs_sp));
+#endif
   DEFINE(TSK_STACK,		offsetof(struct task_struct, stack));
   BLANK();
   DEFINE(THREAD_CPU_CONTEXT,	offsetof(struct task_struct, thread.cpu_context));

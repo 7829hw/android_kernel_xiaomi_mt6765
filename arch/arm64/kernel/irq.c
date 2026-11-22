@@ -23,10 +23,16 @@
 
 #include <linux/kernel_stat.h>
 #include <linux/irq.h>
+#include <linux/scs.h>
 #include <linux/smp.h>
 #include <linux/init.h>
 #include <linux/irqchip.h>
 #include <linux/seq_file.h>
+
+#ifdef CONFIG_SHADOW_CALL_STACK
+DEFINE_PER_CPU(unsigned long [SCS_SIZE / sizeof(long)], irq_shadow_call_stack)
+	__aligned(SCS_SIZE);
+#endif
 
 unsigned long irq_err_count;
 

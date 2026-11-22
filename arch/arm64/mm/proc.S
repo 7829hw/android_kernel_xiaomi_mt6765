@@ -82,6 +82,7 @@ alternative_endif
 	stp	x7, x8, [x0, #48]
 	stp	x9, x10, [x0, #64]
 	stp	x11, x12, [x0, #80]
+	str	x18, [x0, #96]		// Save the platform register
 	ret
 ENDPROC(cpu_do_suspend)
 
@@ -98,6 +99,8 @@ ENTRY(cpu_do_resume)
 	ldp	x9, x10, [x0, #48]
 	ldp	x11, x12, [x0, #64]
 	ldp	x13, x14, [x0, #80]
+	ldr	x18, [x0, #96]
+	str	xzr, [x0, #96]		// Clear the saved shadow stack pointer
 	msr	tpidr_el0, x2
 	msr	tpidrro_el0, x3
 	msr	contextidr_el1, x4
@@ -243,14 +246,14 @@ ENTRY(idmap_kpti_install_ng_mappings)
 	/* We're the boot CPU. Wait for the others to catch up */
 	sevl
 1:	wfe
-	ldaxr	w18, [flag_ptr]
-	eor	w18, w18, num_cpus
-	cbnz	w18, 1b
+	ldaxr	w0, [flag_ptr]
+	eor	w0, w0, num_cpus
+	cbnz	w0, 1b
 
 	/* We need to walk swapper, so turn off the MMU. */
-	mrs	x18, sctlr_el1
-	bic	x18, x18, #SCTLR_ELx_M
-	msr	sctlr_el1, x18
+	mrs	x0, sctlr_el1
+	bic	x0, x0, #SCTLR_ELx_M
+	msr	sctlr_el1, x0
 	isb
 
 	/* Everybody is enjoying the idmap, so we can rewrite swapper. */
@@ -273,9 +276,9 @@ skip_pgd:
 	isb
 
 	/* We're done: fire up the MMU again */
-	mrs	x18, sctlr_el1
-	orr	x18, x18, #SCTLR_ELx_M
-	msr	sctlr_el1, x18
+	mrs	x0, sctlr_el1
+	orr	x0, x0, #SCTLR_ELx_M
+	msr	sctlr_el1, x0
 	isb
 
 	/*
@@ -348,19 +351,19 @@ skip_pte:
 	/* Secondary CPUs end up here */
 __idmap_kpti_secondary:
 	/* Uninstall swapper before surgery begins */
-	__idmap_cpu_set_reserved_ttbr1 x18, x17
+	__idmap_cpu_set_reserved_ttbr1 x0, x17
 
 	/* Increment the flag to let the boot CPU we're ready */
-1:	ldxr	w18, [flag_ptr]
-	add	w18, w18, #1
-	stxr	w17, w18, [flag_ptr]
+1:	ldxr	w0, [flag_ptr]
+	add	w0, w0, #1
+	stxr	w17, w0, [flag_ptr]
 	cbnz	w17, 1b
 
 	/* Wait for the boot CPU to finish messing around with swapper */
 	sevl
 1:	wfe
-	ldxr	w18, [flag_ptr]
-	cbnz	w18, 1b
+	ldxr	w0, [flag_ptr]
+	cbnz	w0, 1b
 
 	/* All done, act like nothing happened */
 	msr	ttbr1_el1, swapper_ttb

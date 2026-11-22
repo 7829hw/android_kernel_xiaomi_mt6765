@@ -80,6 +80,7 @@
 #include <linux/sysctl.h>
 #include <linux/kcov.h>
 #include <linux/cpufreq_times.h>
+#include <linux/scs.h>
 
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
@@ -350,6 +351,7 @@ void put_task_stack(struct task_struct *tsk)
 void free_task(struct task_struct *tsk)
 {
 	cpufreq_task_times_exit(tsk);
+	scs_release(tsk);
 
 #ifndef CONFIG_THREAD_INFO_IN_TASK
 	/*
@@ -454,6 +456,7 @@ void __init fork_init(void)
 
 	/* do the arch specific task caches init */
 	arch_task_cache_init();
+	scs_init();
 
 	set_max_threads(MAX_THREADS);
 
@@ -543,6 +546,10 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 #endif
 
 	setup_thread_stack(tsk, orig);
+	err = scs_prepare(tsk, node);
+	if (err)
+		goto free_stack;
+
 	clear_user_return_notifier(tsk);
 	clear_tsk_need_resched(tsk);
 	set_task_stack_end_magic(tsk);

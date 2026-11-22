@@ -25,6 +25,7 @@
 #include <asm/alternative.h>
 #include <asm/assembler.h>
 #include <asm/asm-offsets.h>
+#include <asm/scs.h>
 #include <asm/cpufeature.h>
 #include <asm/errno.h>
 #include <asm/esr.h>
@@ -157,6 +158,7 @@ alternative_cb_end
 	ldp	x2, x3, [sp, #16 * 1]
 #endif
 1:
+	scs_load tsk
 
 	mov	x29, xzr			// fp pointed to user-space
 	.else
@@ -288,6 +290,7 @@ alternative_else_nop_endif
 3:
 	apply_ssbd 0, 5f, x0, x1
 5:
+	scs_save tsk
 	.endif
 
 	msr	elr_el1, x21			// set up the return data
@@ -332,6 +335,9 @@ alternative_else_nop_endif
 
 	.macro	irq_stack_entry
 	mov	x19, sp			// preserve the original sp
+#ifdef CONFIG_SHADOW_CALL_STACK
+	mov	x24, scs_sp		// preserve the original shadow stack
+#endif
 
 	/*
 	 * Compare sp with the base of the task stack.
@@ -349,6 +355,9 @@ alternative_else_nop_endif
 
 	/* switch to the irq stack */
 	mov	sp, x26
+#ifdef CONFIG_SHADOW_CALL_STACK
+	adr_this_cpu scs_sp, irq_shadow_call_stack, x26
+#endif
 
 	/*
 	 * Add a dummy stack frame, this non-standard format is fixed up
@@ -361,11 +370,13 @@ alternative_else_nop_endif
 	.endm
 
 	/*
-	 * x19 should be preserved between irq_stack_entry and
-	 * irq_stack_exit.
+	 * Preserve the callee-saved registers across the interrupt handler.
 	 */
 	.macro	irq_stack_exit
 	mov	sp, x19
+#ifdef CONFIG_SHADOW_CALL_STACK
+	mov	scs_sp, x24
+#endif
 	.endm
 
 /*
@@ -862,6 +873,8 @@ ENTRY(cpu_switch_to)
 	ldr	lr, [x8]
 	mov	sp, x9
 	msr	sp_el0, x1
+	scs_save x0
+	scs_load x1
 	ret
 ENDPROC(cpu_switch_to)
 
