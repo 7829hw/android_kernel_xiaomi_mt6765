@@ -108,6 +108,15 @@ ifeq ($(CONFIG_ARM64_MODULE_PLTS),y)
 KBUILD_LDFLAGS_MODULE	+= -T $(srctree)/arch/arm64/kernel/module.lds
 endif
 
+ifeq ($(CONFIG_LTO_CLANG), y)
+# ThinLTO builds with -fvisibility=default.  A module linked from several
+# objects then refers to functions in another ThinLTO partition, such as
+# the CFI jump table entries, through the GOT, and the module loader does
+# not handle GOT relocations.  Hidden visibility keeps those references
+# direct; the loader does not look at symbol visibility.
+KBUILD_CFLAGS_MODULE	+= -fvisibility=hidden
+endif
+
 # Default value
 head-y		:= arch/arm64/kernel/head.o
 
