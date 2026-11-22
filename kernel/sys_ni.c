@@ -16,13 +16,6 @@ asmlinkage long sys_ni_syscall(void)
 	return -ENOSYS;
 }
 
-#ifdef CONFIG_LTO_CLANG
-/* Keep the weak syscall aliases visible to the LTO and CFI passes. */
-#undef cond_syscall
-#define cond_syscall(name)						\
-	extern asmlinkage long name(void) __weak __alias(sys_ni_syscall)
-#endif
-
 cond_syscall(sys_quotactl);
 cond_syscall(sys32_quotactl);
 cond_syscall(sys_acct);
@@ -204,6 +197,7 @@ cond_syscall(sys_mlockall);
 cond_syscall(sys_munlockall);
 cond_syscall(sys_mlock2);
 cond_syscall(sys_mincore);
+cond_syscall(sys_madvise);
 cond_syscall(sys_mremap);
 cond_syscall(sys_remap_file_pages);
 cond_syscall(compat_sys_move_pages);
