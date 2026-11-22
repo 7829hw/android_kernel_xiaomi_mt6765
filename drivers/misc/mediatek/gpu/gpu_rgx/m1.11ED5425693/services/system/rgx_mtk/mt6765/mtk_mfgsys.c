@@ -73,7 +73,6 @@ void __iomem *topck_base;
 #define MTK_WAIT_FW_RESPONSE_TIMEOUT_US 5000
 #define MTK_GPIO_REG_OFFSET			 0x30
 #define MTK_GPU_FREQ_ID_INVALID		 0xFFFFFFFF
-#define MTK_RGX_DEVICE_INDEX_INVALID	-1
 
 static IMG_HANDLE g_RGXutilUser;
 static IMG_HANDLE g_hDVFSTimer;
@@ -151,41 +150,18 @@ int gpu_pm_restore_noirq(struct device *device)
 static PVRSRV_DEVICE_NODE *MTKGetRGXDevNode(void)
 {
 	PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
-	IMG_UINT32 i;
+	PVRSRV_DEVICE_NODE *psDeviceNode;
 
-	if (psPVRSRVData) {
-		for (i = 0; i < psPVRSRVData->ui32RegisteredDevices; i++) {
-			PVRSRV_DEVICE_NODE *psDeviceNode =
-			&psPVRSRVData->psDeviceNodeList[i];
+	if (!psPVRSRVData)
+		return NULL;
 
-			if (psDeviceNode && psDeviceNode->psDevConfig)
-				return psDeviceNode;
-		}
+	for (psDeviceNode = psPVRSRVData->psDeviceNodeList; psDeviceNode;
+	     psDeviceNode = psDeviceNode->psNext) {
+		if (psDeviceNode->psDevConfig)
+			return psDeviceNode;
 	}
 	return NULL;
 }
-
-static IMG_UINT32 MTKGetRGXDevIdx(void)
-{
-	static IMG_UINT32 ms_ui32RGXDevIdx = MTK_RGX_DEVICE_INDEX_INVALID;
-
-	if (ms_ui32RGXDevIdx == MTK_RGX_DEVICE_INDEX_INVALID) {
-		PVRSRV_DATA *psPVRSRVData = PVRSRVGetPVRSRVData();
-		IMG_UINT32 i;
-
-		for (i = 0; i < psPVRSRVData->ui32RegisteredDevices; i++) {
-			PVRSRV_DEVICE_NODE *psDeviceNode =
-			&psPVRSRVData->psDeviceNodeList[i];
-
-			if (psDeviceNode && psDeviceNode->psDevConfig) {
-				ms_ui32RGXDevIdx = i;
-				break;
-			}
-		}
-	}
-	return ms_ui32RGXDevIdx;
-}
-
 
 /* extern void ged_log_trace_counter(char *name, int count); */
 static void MTKWriteBackFreqToRGX(PVRSRV_DEVICE_NODE *psDevNode,
@@ -403,8 +379,7 @@ static int MTKDeInitHWAPM(void)
 static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
 {
 	PVRSRV_ERROR eResult;
-	IMG_UINT32 ui32RGXDevIdx;
-	IMG_BOOL bet = IMG_FALSE;
+	PVRSRV_DEVICE_NODE *psDevNode;
 
 	/* bottom bound */
 	if (ui32NewFreqID > g_bottom_freq_id)
@@ -424,18 +399,24 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
 	if (ui32NewFreqID == mt_gpufreq_get_cur_freq_index())
 		return IMG_FALSE;
 
-	ui32RGXDevIdx = MTKGetRGXDevIdx();
-	if (ui32RGXDevIdx == MTK_RGX_DEVICE_INDEX_INVALID)
+	psDevNode = MTKGetRGXDevNode();
+	if (!psDevNode)
 		return IMG_FALSE;
 
-	eResult = PVRSRVDevicePreClockSpeedChange(ui32RGXDevIdx,
+	eResult = PVRSRVDevicePreClockSpeedChange(psDevNode,
 			bIdleDevice, (void *)NULL);
 	if ((eResult == PVRSRV_OK) || (eResult == PVRSRV_ERROR_RETRY)) {
 		unsigned int ui32GPUFreq;
 		unsigned int ui32CurFreqID;
 		PVRSRV_DEV_POWER_STATE ePowerState;
 
-		PVRSRVGetDevicePowerState(ui32RGXDevIdx, &ePowerState);
+		if (PVRSRVGetDevicePowerState(psDevNode, &ePowerState) !=
+		    PVRSRV_OK) {
+			if (eResult == PVRSRV_OK)
+				PVRSRVDevicePostClockSpeedChange(
+					psDevNode, bIdleDevice, NULL);
+			return IMG_FALSE;
+		}
 		if (ePowerState != PVRSRV_DEV_POWER_STATE_ON)
 			MTKEnableMfgClock(IMG_FALSE);
 
@@ -449,7 +430,7 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
 			trace_gpu_freq(ui32GPUFreq);
 
 #endif
-		MTKWriteBackFreqToRGX(ui32RGXDevIdx, ui32GPUFreq);
+		MTKWriteBackFreqToRGX(psDevNode, ui32GPUFreq);
 
 #ifdef MTK_DEBUG
 	if (gpu_debug_enable)
@@ -461,7 +442,7 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
 			MTKDisableMfgClock(IMG_TRUE);
 
 		if (eResult == PVRSRV_OK)
-			PVRSRVDevicePostClockSpeedChange(ui32RGXDevIdx,
+			PVRSRVDevicePostClockSpeedChange(psDevNode,
 			bIdleDevice, (void *)NULL);
 
 		return IMG_TRUE;
@@ -704,6 +685,7 @@ static void MTKStopPowerIndex(void)
 
 static IMG_UINT32 MTKCalPowerIndex(void)
 {
+	PVRSRV_DEVICE_NODE *psDevNode = MTKGetRGXDevNode();
 	IMG_UINT32 ui32State, ui32Result;
 	PVRSRV_DEV_POWER_STATE  ePowerState;
 	IMG_BOOL bTimeout;
@@ -711,15 +693,15 @@ static IMG_UINT32 MTKCalPowerIndex(void)
 	void *pvGPIO_REG = g_pvRegsKM + (uintptr_t)MTK_GPIO_REG_OFFSET;
 	void *pvPOWER_ESTIMATE_RESULT = g_pvRegsBaseKM + (uintptr_t)6328;
 
-	if ((!g_pvRegsKM) || (!g_pvRegsBaseKM))
+	if (!psDevNode || !g_pvRegsKM || !g_pvRegsBaseKM)
 		return 0;
 
-	if (PVRSRVPowerLock() != PVRSRV_OK)
+	if (PVRSRVPowerLock(psDevNode) != PVRSRV_OK)
 		return 0;
 
-	PVRSRVGetDevicePowerState(MTKGetRGXDevIdx(), &ePowerState);
-	if (ePowerState != PVRSRV_DEV_POWER_STATE_ON) {
-		PVRSRVPowerUnlock();
+	if (PVRSRVGetDevicePowerState(psDevNode, &ePowerState) != PVRSRV_OK ||
+	    ePowerState != PVRSRV_DEV_POWER_STATE_ON) {
+		PVRSRVPowerUnlock(psDevNode);
 		return 0;
 	}
 
@@ -740,7 +722,7 @@ static IMG_UINT32 MTKCalPowerIndex(void)
 	/* writes 0 to GPIO_INPUT_REQ, bit[0] */
 	DRV_WriteReg32(pvGPIO_REG, DRV_Reg32(pvGPIO_REG) & (~0x1));
 	if (bTimeout) {
-		PVRSRVPowerUnlock();
+		PVRSRVPowerUnlock(psDevNode);
 		return 0;
 	}
 
@@ -767,13 +749,13 @@ static IMG_UINT32 MTKCalPowerIndex(void)
 	/* writes 0 to GPIO_OUTPUT_ACK, bit[17] */
 	DRV_WriteReg32(pvGPIO_REG, DRV_Reg32(pvGPIO_REG) & (~0x20000));
 	if (bTimeout) {
-		PVRSRVPowerUnlock();
+		PVRSRVPowerUnlock(psDevNode);
 		return 0;
 	}
 
 	MTKReStartPowerIndex();
 
-	PVRSRVPowerUnlock();
+	PVRSRVPowerUnlock(psDevNode);
 
 	return (ui32State == 1) ? ui32Result : 0;
 }
