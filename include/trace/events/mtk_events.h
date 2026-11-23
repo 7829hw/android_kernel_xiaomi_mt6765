@@ -253,14 +253,15 @@ TRACE_EVENT(hps_update,
 		 char *hvytsk,
 		 char *limit,
 		 char *base,
-		 unsigned int up_avg,
-		 unsigned int down_avg,
-		 unsigned int tlp_avg,
-		 unsigned int rush_cnt,
+		 unsigned int *avg,
 		 char *target),
 
+	/*
+	 * BPF raw tracepoints take at most 12 arguments, so up_avg,
+	 * down_avg, tlp_avg and rush_cnt are passed as avg[0..3].
+	 */
 	TP_ARGS(actionID, online, cur_load, cur_tlp, cur_iowait, hvytsk,
-		limit, base, up_avg, down_avg, tlp_avg, rush_cnt, target),
+		limit, base, avg, target),
 
 	TP_STRUCT__entry(
 		__field(unsigned int, actionID)
@@ -287,10 +288,10 @@ TRACE_EVENT(hps_update,
 		__assign_str(hvytsk, hvytsk);
 		__assign_str(limit, limit);
 		__assign_str(base, base);
-		__entry->up_avg = up_avg;
-		__entry->down_avg = down_avg;
-		__entry->tlp_avg = tlp_avg;
-		__entry->rush_cnt = rush_cnt;
+		__entry->up_avg = avg[0];
+		__entry->down_avg = avg[1];
+		__entry->tlp_avg = avg[2];
+		__entry->rush_cnt = avg[3];
 		__assign_str(target, target);),
 
 	TP_printk
@@ -472,32 +473,40 @@ TRACE_EVENT(perf_index_s,
 );
 
 
+#ifndef PERF_INDEX_IO_NR
+enum {
+	PERF_INDEX_IO_WL,
+	PERF_INDEX_IO_REQ_R,
+	PERF_INDEX_IO_ALL_R,
+	PERF_INDEX_IO_REQSZ_R,
+	PERF_INDEX_IO_REQC_R,
+	PERF_INDEX_IO_REQ_W,
+	PERF_INDEX_IO_ALL_W,
+	PERF_INDEX_IO_REQSZ_W,
+	PERF_INDEX_IO_REQC_W,
+	PERF_INDEX_IO_DUR,
+	PERF_INDEX_IO_Q_DEPT,
+	PERF_INDEX_IO_NR
+};
+#define PERF_INDEX_IO_NR PERF_INDEX_IO_NR
+#endif
+
 TRACE_EVENT(perf_index_l,
 
+	/*
+	 * BPF raw tracepoints take at most 12 arguments, so the I/O
+	 * statistics are passed as an array indexed by PERF_INDEX_IO_*.
+	 */
 	TP_PROTO(
 		long free_mem,
 		long avail_mem,
-		int io_wl,
-		int io_req_r,
-		int io_all_r,
-		int io_reqsz_r,
-		int io_reqc_r,
-		int io_req_w,
-		int io_all_w,
-		int io_reqsz_w,
-		int io_reqc_w,
-		int io_dur,
-		int io_q_dept,
+		int *io,
 		int *stall
 	),
 
 	TP_ARGS(free_mem,
 		avail_mem,
-		io_wl,
-		io_req_r, io_all_r, io_reqsz_r, io_reqc_r,
-		io_req_w, io_all_w, io_reqsz_w, io_reqc_w,
-		io_dur,
-		io_q_dept,
+		io,
 		stall
 	),
 
@@ -521,17 +530,17 @@ TRACE_EVENT(perf_index_l,
 	TP_fast_assign(
 		__entry->free_mem   = free_mem;
 		__entry->avail_mem  = avail_mem;
-		__entry->io_wl      = io_wl;
-		__entry->io_req_r   = io_req_r;
-		__entry->io_all_r   = io_all_r;
-		__entry->io_reqsz_r = io_reqsz_r;
-		__entry->io_reqc_r  = io_reqc_r;
-		__entry->io_req_w   = io_req_w;
-		__entry->io_all_w   = io_all_w;
-		__entry->io_reqsz_w = io_reqsz_w;
-		__entry->io_reqc_w  = io_reqc_w;
-		__entry->io_dur     = io_dur;
-		__entry->io_q_dept  = io_q_dept;
+		__entry->io_wl      = io[PERF_INDEX_IO_WL];
+		__entry->io_req_r   = io[PERF_INDEX_IO_REQ_R];
+		__entry->io_all_r   = io[PERF_INDEX_IO_ALL_R];
+		__entry->io_reqsz_r = io[PERF_INDEX_IO_REQSZ_R];
+		__entry->io_reqc_r  = io[PERF_INDEX_IO_REQC_R];
+		__entry->io_req_w   = io[PERF_INDEX_IO_REQ_W];
+		__entry->io_all_w   = io[PERF_INDEX_IO_ALL_W];
+		__entry->io_reqsz_w = io[PERF_INDEX_IO_REQSZ_W];
+		__entry->io_reqc_w  = io[PERF_INDEX_IO_REQC_W];
+		__entry->io_dur     = io[PERF_INDEX_IO_DUR];
+		__entry->io_q_dept  = io[PERF_INDEX_IO_Q_DEPT];
 		memcpy(__entry->stall, stall, sizeof(int)*8);
 	),
 

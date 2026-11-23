@@ -152,6 +152,7 @@ void __perf_tracker(u64 wallclock,
 	int bw_c = 0, bw_g = 0, bw_mm = 0, bw_total = 0;
 	int i;
 	int stall[max_cpus] = {0};
+	int io[PERF_INDEX_IO_NR] = {0};
 	unsigned int sched_freq[3] = {0};
 	int cid;
 
@@ -197,19 +198,24 @@ void __perf_tracker(u64 wallclock,
 
 	/* trace for long msg */
 
+#ifdef CONFIG_MTK_BLOCK_TAG
+	io[PERF_INDEX_IO_WL] = iostat->wl;
+	io[PERF_INDEX_IO_REQ_R] = iostat->tp_req_r;
+	io[PERF_INDEX_IO_ALL_R] = iostat->tp_all_r;
+	io[PERF_INDEX_IO_REQSZ_R] = iostat->reqsize_r;
+	io[PERF_INDEX_IO_REQC_R] = iostat->reqcnt_r;
+	io[PERF_INDEX_IO_REQ_W] = iostat->tp_req_w;
+	io[PERF_INDEX_IO_ALL_W] = iostat->tp_all_w;
+	io[PERF_INDEX_IO_REQSZ_W] = iostat->reqsize_w;
+	io[PERF_INDEX_IO_REQC_W] = iostat->reqcnt_w;
+	io[PERF_INDEX_IO_DUR] = iostat->duration;
+	io[PERF_INDEX_IO_Q_DEPT] = iostat->q_depth;
+#endif
+
 	trace_perf_index_l(
 			K(mm_free),
 			K(mm_available),
-#ifdef CONFIG_MTK_BLOCK_TAG
-			iostat->wl,
-			iostat->tp_req_r, iostat->tp_all_r,
-			iostat->reqsize_r, iostat->reqcnt_r,
-			iostat->tp_req_w, iostat->tp_all_w,
-			iostat->reqsize_w, iostat->reqcnt_w,
-			iostat->duration, iostat->q_depth,
-#else
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#endif
+			io,
 			stall
 			);
 }

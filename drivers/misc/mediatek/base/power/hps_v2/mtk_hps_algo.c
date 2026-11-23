@@ -686,8 +686,12 @@ HPS_END:
 						 str_online, hps_ctxt.cur_loads,
 						 hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
 						 str_criteria_limit, str_criteria_base,
-						 hps_sys.up_load_avg, hps_sys.down_load_avg,
-						 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
+						 (unsigned int []){
+							hps_sys.up_load_avg,
+							hps_sys.down_load_avg,
+							hps_sys.tlp_avg,
+							hps_sys.rush_cnt },
+						 str_target);
 			}
 			hps_ctxt_reset_stas_nolock();
 		}
