@@ -276,6 +276,36 @@ static int init_cpu_info(void)
 }
 late_initcall_sync(init_cpu_info)
 
+#ifndef CONFIG_SCHED_TUNE
+/*
+ * Without SchedTune, keep the threshold above which boosted tasks are
+ * steered to the big cluster at the default tune.c used: the capacity
+ * of the lowest OPP of the LITTLE cluster.
+ */
+int stune_task_threshold;
+
+static int __init init_stune_task_threshold(void)
+{
+	const struct sched_group_energy *sge_core;
+	struct hmp_domain *domain;
+	int cpu;
+
+	for_each_hmp_domain_L_first(domain) {
+		cpu = cpumask_first(&domain->possible_cpus);
+		sge_core = cpu_core_energy(cpu);
+		if (!sge_core)
+			return -EINVAL;
+
+		stune_task_threshold = sge_core->cap_states[0].cap;
+		if (stune_task_threshold)
+			break;
+	}
+
+	return 0;
+}
+late_initcall_sync(init_stune_task_threshold);
+#endif
+
 void set_sched_turn_point_cap(void)
 {
 #ifdef CONFIG_MTK_UNIFY_POWER
