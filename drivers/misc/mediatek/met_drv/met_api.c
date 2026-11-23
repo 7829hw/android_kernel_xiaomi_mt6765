@@ -359,7 +359,10 @@ EXPORT_SYMBOL(met_show_pmic_info);
 
 u64 met_perf_event_read_local(struct perf_event *ev)
 {
-	return perf_event_read_local(ev);
+	u64 value = 0;
+
+	perf_event_read_local(ev, &value, NULL, NULL);
+	return value;
 }
 EXPORT_SYMBOL(met_perf_event_read_local);
 
