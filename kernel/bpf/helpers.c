@@ -1080,7 +1080,7 @@ struct bpf_timer_kern {
 
 static DEFINE_PER_CPU(struct bpf_hrtimer *, hrtimer_running);
 
-static enum hrtimer_restart bpf_timer_cb(struct hrtimer *hrtimer)
+static enum hrtimer_restart __nocfi bpf_timer_cb(struct hrtimer *hrtimer)
 {
 	struct bpf_hrtimer *t = container_of(hrtimer, struct bpf_hrtimer, timer);
 	struct bpf_map *map = t->map;

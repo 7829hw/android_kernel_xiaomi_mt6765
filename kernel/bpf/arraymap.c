@@ -506,8 +506,9 @@ static bool array_map_meta_equal(const struct bpf_map *meta0,
 	       meta0->max_entries == meta1->max_entries;
 }
 
-static int bpf_for_each_array_elem(struct bpf_map *map, void *callback_fn,
-				   void *callback_ctx, u64 flags)
+static int __nocfi bpf_for_each_array_elem(struct bpf_map *map,
+					   void *callback_fn,
+					   void *callback_ctx, u64 flags)
 {
 	u32 i, key, num_elems = 0;
 	struct bpf_array *array;

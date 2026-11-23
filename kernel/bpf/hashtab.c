@@ -1692,8 +1692,9 @@ htab_lru_map_lookup_and_delete_batch(struct bpf_map *map,
 						  true, false);
 }
 
-static int bpf_for_each_hash_elem(struct bpf_map *map, void *callback_fn,
-				  void *callback_ctx, u64 flags)
+static int __nocfi bpf_for_each_hash_elem(struct bpf_map *map,
+					  void *callback_fn,
+					  void *callback_ctx, u64 flags)
 {
 	struct bpf_htab *htab = container_of(map, struct bpf_htab, map);
 	struct hlist_nulls_head *head;
