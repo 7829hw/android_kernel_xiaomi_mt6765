@@ -6397,45 +6397,10 @@ static inline unsigned long task_util(struct task_struct *p)
 	return p->se.avg.util_avg;
 }
 
-#if defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_CGROUP_SCHEDTUNE)
-static inline unsigned long task_uclamped_min(struct task_struct *p)
-{
-	unsigned long task_min;
-	unsigned long st_min;
-
-	task_min = p->uclamp[UCLAMP_MIN].value;
-
-	st_min = uclamp_st_min(p);
-	if (st_min != uclamp_none(UCLAMP_MIN))
-		task_min = st_min;
-
-	return task_min;
-}
-#elif defined(CONFIG_UCLAMP_TASK_GROUP)
-static inline unsigned long task_uclamped_min(struct task_struct *p)
-{
-	unsigned long task_min;
-	unsigned long tg_min;
-
-	task_min = p->uclamp[UCLAMP_MIN].value;
-
-	tg_min = uclamp_tg_min(p);
-	if (tg_min != uclamp_none(UCLAMP_MIN))
-		task_min = tg_min;
-
-	return task_min;
-}
-#elif defined(CONFIG_UCLAMP_TASK)
-static inline unsigned long task_uclamped_min(struct task_struct *p)
-{
-	return p->uclamp[UCLAMP_MIN].value;
-}
-#else
 static inline unsigned long task_uclamped_min(struct task_struct *p)
 {
 	return 0;
 }
-#endif
 
 static inline unsigned long task_uclamped_min_w_ceiling(struct task_struct *p)
 {
@@ -6463,10 +6428,8 @@ static inline unsigned long boosted_task_util(struct task_struct *p);
 static inline bool __task_fits(struct task_struct *p, int cpu, int util)
 {
 	unsigned long capacity = capacity_of(cpu);
-	int task_clamped_util = task_uclamped_min(p);
 
 	util += boosted_task_util(p);
-	util = max(task_clamped_util, util);
 
 	return (capacity * 1024) > (util * capacity_margin);
 }

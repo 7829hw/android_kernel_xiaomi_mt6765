@@ -508,7 +508,6 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	ktime_t throttle, now;
 	unsigned int cur_freq;
 	unsigned int max, min;
-	unsigned int uclamp_min, uclamp_max;
 	int cap_min = 0;
 
 	/*
@@ -547,14 +546,6 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 		if (!cpu_online(cpu_tmp))
 			continue;
-
-		uclamp_min = uclamp_value(cpu_tmp, UCLAMP_MIN);
-		uclamp_max = uclamp_value(cpu_tmp, UCLAMP_MAX);
-		trace_sched_dvfs_uclamp(cpu_tmp, uclamp_min, uclamp_max);
-
-		/* In schedplus, util is scaling by capacity_orig_of*/
-		uclamp_min = (uclamp_min << SCHED_CAPACITY_SHIFT) /
-			capacity_orig_of(cpu_tmp);
 
 		/* convert IO boosted freq to capacity */
 		boosted_util = (sg_cpu->iowait_boost << SCHED_CAPACITY_SHIFT) /
@@ -609,8 +600,6 @@ static void update_fdomain_capacity_request(int cpu, int type)
 			capacity = max(capacity, boosted_util);
 		else
 			capacity = max(capacity, scr->total);
-
-		capacity = uclamp_min > capacity ? uclamp_min : capacity;
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 		/* see if capacity_min exist */

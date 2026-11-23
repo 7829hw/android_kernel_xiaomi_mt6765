@@ -245,16 +245,6 @@ static inline struct schedtune *parent_st(struct schedtune *st)
 	return css_st(st->css.parent);
 }
 
-unsigned int uclamp_st_min(struct task_struct *tsk)
-{
-	unsigned int val;
-
-	rcu_read_lock();
-	val =  task_schedtune(tsk)->uclamp[UCLAMP_MIN].value;
-	rcu_read_unlock();
-	return val;
-}
-
 /*
  * SchedTune root control group
  * The root control group is used to defined a system-wide boosting tuning,

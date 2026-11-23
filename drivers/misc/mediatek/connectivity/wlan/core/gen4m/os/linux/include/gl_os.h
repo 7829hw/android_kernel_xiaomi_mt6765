@@ -277,11 +277,6 @@ extern void wifi_fwlog_event_func_register(wifi_fwlog_event_func_cb pfFwlog);
 extern void update_driver_loaded_status(uint8_t loaded);
 #endif
 
-#if defined(CONFIG_UCLAMP_TASK) && defined(CONFIG_UCLAMP_TASK_GROUP)
-/* uclamp control */
-extern int set_task_uclamp(pid_t pid, u32 min);
-#endif
-
 #ifdef CFG_MTK_ANDROID_WMT
 extern void mtk_wmt_set_ext_ldo(uint32_t flag);
 #endif

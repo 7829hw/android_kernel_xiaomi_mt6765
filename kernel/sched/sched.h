@@ -2464,7 +2464,6 @@ static inline unsigned int uclamp_util(unsigned int cpu, unsigned int util)
 }
 
 #if defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_CGROUP_SCHEDTUNE)
-extern unsigned int uclamp_st_min(struct task_struct *tsk);
 extern struct uclamp_se *root_schedtune_uclamp(int clamp_id);
 extern struct uclamp_se *schedtune_uclamp(struct task_struct *tsk,
 						int clamp_id);

@@ -2205,26 +2205,6 @@ sched_trace(sched_interop);
 /*
  * Tracepoint for uclamp
  */
-TRACE_EVENT(sched_dvfs_uclamp,
-	TP_PROTO(int cpu, unsigned int min, unsigned int max),
-	TP_ARGS(cpu, min, max),
-	TP_STRUCT__entry(
-		__field(int, cpu)
-		__field(unsigned int, min)
-		__field(unsigned int, max)
-		),
-	TP_fast_assign(
-		__entry->cpu		= cpu;
-		__entry->min	= min;
-		__entry->max		= max;
-		),
-	TP_printk("cpu=%d min=%u max=%u",
-		__entry->cpu,
-		__entry->min,
-		__entry->max
-		)
-);
-
 TRACE_EVENT(uclamp_cpu_get_id,
 	TP_PROTO(int cpu, pid_t pid, int clamp_id, int tsk_cvalue,
 		int cpu_cvalue),

@@ -1455,50 +1455,6 @@ unsigned long uclamp_tg_min(struct task_struct *task)
 }
 #endif /* CONFIG_UCLAMP_TASK_GROUP */
 
-static struct task_struct *find_process_by_pid(pid_t pid);
-int set_task_uclamp(pid_t pid, u32 min)
-{
-	struct task_struct *p;
-	struct uclamp_se *uc_se;
-	int retval = 0;
-
-	if (pid <= 0)
-		return -EINVAL;
-
-	if (min < 0)
-		min = 0;
-	if (min > 100)
-		return -ERANGE;
-
-	min = scale_from_percent(min);
-#ifdef CONFIG_MTK_UNIFY_POWER
-	min = search_opp_cappacity(min);
-	WARN_ON(min > SCHED_CAPACITY_SCALE);
-#endif
-
-	mutex_lock(&uclamp_mutex);
-	rcu_read_lock();
-
-	p = find_process_by_pid(pid);
-	if (!p) {
-		retval = -ESRCH;
-		goto out;
-	}
-	/* Update min utilization clamp */
-	uc_se = &p->uclamp[UCLAMP_MIN];
-	retval |= uclamp_group_get(p, NULL, UCLAMP_MIN, uc_se,
-				   min);
-
-	if (retval)
-		retval = -ENOSPC;
-out:
-	rcu_read_unlock();
-	mutex_unlock(&uclamp_mutex);
-
-	return retval;
-}
-EXPORT_SYMBOL_GPL(set_task_uclamp);
-
 /**
  * init_uclamp: initialize data structures required for utilization clamping
  */
@@ -1539,7 +1495,6 @@ static inline int alloc_uclamp_sched_group(struct task_group *tg,
 {
 	return 1;
 }
-int set_task_uclamp(pid_t pid, u32 min) { return 0; }
 static inline void init_uclamp(void) { }
 #endif /* CONFIG_UCLAMP_TASK */
 
