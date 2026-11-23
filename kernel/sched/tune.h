@@ -91,6 +91,28 @@ int schedtune_accept_deltas(int nrg_delta, int cap_delta,
 #define schedtune_cpu_capacity_min(cpu)  0
 #define schedtune_task_capacity_min(tsk) 0
 
+#define schedtune_prefer_idle(tsk) 0
+
+#ifdef CONFIG_PROVE_LOCKING
+static inline int close_lockdep_if_cpu_offline(void)
+{
+	int result = 0;
+
+	if (!cpu_online(raw_smp_processor_id())) {
+		lockdep_off();
+		result = 1;
+	}
+
+	return result;
+}
+
+static inline void open_lockdep_if_need(int need)
+{
+	if (need)
+		lockdep_on();
+}
+#endif
+
 #define schedtune_exit_task(task) do { } while (0)
 
 #define schedtune_enqueue_task(task, cpu) do { } while (0)
