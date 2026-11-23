@@ -37,9 +37,6 @@ extern int display_set_wait_idle_time(unsigned int wait_idle_time);
 
 #ifdef CONFIG_SCHED_TUNE
 extern int prefer_idle_for_perf_idx(int idx, int prefer_idle);
-extern int schedtune_task_boost(struct task_struct *tsk);
-#else
-#define schedtune_task_boost(tsk) 0
 #endif
 
 extern unsigned int hmp_cpu_is_slowest(int cpu);

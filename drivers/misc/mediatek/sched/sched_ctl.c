@@ -599,7 +599,7 @@ int cpu_prefer(struct task_struct *p)
 		return SCHED_PREFER_BIG;
 
 	if (p->cpu_prefer == SCHED_PREFER_LITTLE &&
-		schedtune_task_boost(p))
+		uclamp_boosted(p))
 		return SCHED_PREFER_NONE;
 
 	return p->cpu_prefer;
