@@ -22,7 +22,6 @@
 #include <linux/slab.h>
 #include <linux/topology.h>
 
-#include "tchbst.h"
 #include "topo_ctrl.h"
 #include "mtk_perfmgr_internal.h"
 

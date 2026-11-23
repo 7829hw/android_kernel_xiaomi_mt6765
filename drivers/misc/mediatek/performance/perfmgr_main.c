@@ -16,7 +16,6 @@
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
 
-#include "tchbst.h"
 #include "boost_ctrl.h"
 #include "mtk_perfmgr_internal.h"
 
@@ -31,18 +30,6 @@ struct platform_device perfmgr_device = {
 	.id        = -1,
 };
 
-static int perfmgr_suspend(struct device *dev)
-{
-#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
-	ktch_suspend();
-#endif
-	return 0;
-}
-
-static int perfmgr_resume(struct device *dev)
-{
-	return 0;
-}
 static int perfmgr_remove(struct platform_device *dev)
 {
 #ifdef CONFIG_MTK_BASE_POWER
@@ -58,10 +45,6 @@ static struct platform_driver perfmgr_driver = {
 	.remove     = perfmgr_remove,
 	.driver     = {
 		.name = "perfmgr",
-		.pm = &(const struct dev_pm_ops){
-			.suspend = perfmgr_suspend,
-			.resume = perfmgr_resume,
-		},
 	},
 };
 
@@ -94,7 +77,6 @@ static int __init init_perfmgr(void)
 
 #ifdef CONFIG_MTK_BASE_POWER
 	if (!strstr(CONFIG_MTK_PLATFORM, "mt8")) {
-		init_tchbst(perfmgr_root);
 		init_boostctrl(perfmgr_root);
 	}
 #endif
