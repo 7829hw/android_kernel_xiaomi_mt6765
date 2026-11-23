@@ -837,6 +837,10 @@ endif
 # These warnings generated too much noise in a regular build.
 # Use make W=1 to enable them (see scripts/Makefile.extrawarn)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+# Drivers that add -Wall in their own Makefiles turn the warning back on,
+# since clang 13 includes it in -Wall. Keep it from failing those that
+# also add -Werror.
+KBUILD_CFLAGS += $(call cc-option, -Wno-error=unused-but-set-variable)
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
 ifdef CONFIG_FRAME_POINTER
