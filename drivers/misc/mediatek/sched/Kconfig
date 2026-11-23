@@ -73,6 +73,7 @@ config MTK_SCHED_EAS_POWER_SUPPORT
 
 config CPU_FREQ_DEFAULT_GOV_SCHEDPLUS
 	bool "To make sched+ as default governor"
+	depends on !UCLAMP_TASK
 	select CPU_FREQ_GOV_SCHEDPLUS
 	help
 	  Use the CPUfreq governor 'schedplus' as default.
@@ -82,6 +83,7 @@ config CPU_FREQ_DEFAULT_GOV_SCHEDPLUS
 
 config CPU_FREQ_SCHED_ASSIST
 	bool "'sched-assist sched' cpufreq"
+	depends on !UCLAMP_TASK
 	select CPU_FREQ_GOV_SCHEDPLUS
 	help
 	  sched-assist is NOT a governor, which MUST be dependent on
@@ -96,6 +98,7 @@ config CPU_FREQ_SCHED_ASSIST
 config CPU_FREQ_GOV_SCHEDPLUS
 	bool "'sched+' cpufreq governor"
 	depends on CPU_FREQ
+	depends on !UCLAMP_TASK
 	select CPU_FREQ_GOV_COMMON
 	help
 	  'sched+' - this governor scales cpu frequency from the
