@@ -422,16 +422,6 @@ endmenu # Peripheral
 
 menu "Performance, Power, and Thermal"
 
-config MTK_FPSGO
-	bool "Support FPSGO framework"
-	default n
-	help
-	  Support FPSGO framework for UX & Gaming FPS performance and
-	  low power balance. As a perquisite to ensure FPS performance,
-	  FPSGO persuades lowest power consumption for better DoU
-	  endurance and gaming experience.
-	  If you are not sure about this, set n.
-
 config MTK_PERF_TRACKER
 	bool "MTK system performance index support"
 	help

@@ -17,7 +17,6 @@
 #include <linux/platform_device.h>
 
 #include "tchbst.h"
-#include "io_ctrl.h"
 #include "boost_ctrl.h"
 #include "mtk_perfmgr_internal.h"
 
@@ -99,7 +98,6 @@ static int __init init_perfmgr(void)
 		init_boostctrl(perfmgr_root);
 	}
 #endif
-	init_perfctl(perfmgr_root);
 
 	return 0;
 }
