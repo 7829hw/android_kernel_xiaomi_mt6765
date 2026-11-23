@@ -15,16 +15,10 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/include/ \
 
 
 obj-y += perfmgr_main.o
-obj-y += smart/
 obj-y += base/
 obj-y += cpu_loading/
 
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
-endif
-
-# legacy touch boost
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
-	obj-y += perfmgr/mt6757/
 endif
 
