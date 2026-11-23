@@ -1051,12 +1051,15 @@ static inline void __compat_icmpv6_ndo_send(struct sk_buff *skb_in, u8 type, u8 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 14) && LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)) || (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 29) && !defined(ISUBUNTU1910) && !defined(ISUBUNTU1904) && !defined(ISRHEL8))
 #include <linux/skbuff.h>
 #include <net/sch_generic.h>
-static inline void skb_reset_redirect(struct sk_buff *skb)
+static inline void __compat_skb_reset_redirect(struct sk_buff *skb)
 {
+	/* The backported generic XDP redirect code adds skb->redirected. */
+	skb_reset_redirect(skb);
 #ifdef CONFIG_NET_SCHED
 	skb_reset_tc(skb);
 #endif
 }
+#define skb_reset_redirect __compat_skb_reset_redirect
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0) && !defined(ISRHEL7)
