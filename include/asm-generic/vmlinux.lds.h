@@ -484,6 +484,7 @@
 		*(.text.unknown .text.unknown.*)			\
 		*(.text..ftrace)					\
 		*(TEXT_CFI_MAIN) 					\
+		*(.text..L.cfi.jumptable .text..L.cfi.jumptable.*)	\
 		*(.ref.text)						\
 		*(.text.asan.* .text.tsan.*)				\
 	MEM_KEEP(init.text)						\
