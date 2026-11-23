@@ -1992,8 +1992,8 @@ int mt_accdet_probe(struct platform_device *dev)
 	accdet_init_timer.data = 0;
 
 	/* wake lock */
-	accdet_irq_lock = wakeup_source_register("accdet_irq_lock");
-	accdet_timer_lock = wakeup_source_register("accdet_timer_lock");
+	accdet_irq_lock = wakeup_source_register(NULL, "accdet_irq_lock");
+	accdet_timer_lock = wakeup_source_register(NULL, "accdet_timer_lock");
 
 	/* Create workqueue */
 	accdet_workqueue = create_singlethread_workqueue("accdet");

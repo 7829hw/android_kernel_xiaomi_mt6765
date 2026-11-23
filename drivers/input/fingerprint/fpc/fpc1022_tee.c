@@ -516,7 +516,7 @@ static int fpc1022_platform_probe(struct platform_device *pldev)
 
 	/* Request that the interrupt should be wakeable */
 	enable_irq_wake(fpc1022->irq_num);
-	fpc1022->ttw_wl = wakeup_source_register("fpc_ttw_wl");
+	fpc1022->ttw_wl = wakeup_source_register(NULL, "fpc_ttw_wl");
 
 	ret = sysfs_create_group(&dev->kobj, &attribute_group);
 	if (ret) {

@@ -1638,10 +1638,10 @@ int mt_accdet_probe(struct platform_device *dev)
  * wake lock
  * ------------------------------------------------------------------
  */
-	accdet_suspend_lock = wakeup_source_register("accdet wakelock");
-	accdet_irq_lock = wakeup_source_register("accdet irq wakelock");
-	accdet_key_lock = wakeup_source_register("accdet key wakelock");
-	accdet_timer_lock = wakeup_source_register("accdet key wakelock");
+	accdet_suspend_lock = wakeup_source_register(NULL, "accdet wakelock");
+	accdet_irq_lock = wakeup_source_register(NULL, "accdet irq wakelock");
+	accdet_key_lock = wakeup_source_register(NULL, "accdet key wakelock");
+	accdet_timer_lock = wakeup_source_register(NULL, "accdet key wakelock");
 
 #if DEBUG_THREAD
 	ret = accdet_create_attr(&accdet_driver_hal.driver);

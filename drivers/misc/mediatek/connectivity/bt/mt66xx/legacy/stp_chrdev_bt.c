@@ -598,7 +598,7 @@ static int BT_init(void)
 	/* Initialize wait queue */
 	init_waitqueue_head(&(inq));
 	/* Initialize wake lock */
-	bt_wakelock = wakeup_source_register("bt_drv");
+	bt_wakelock = wakeup_source_register(NULL, "bt_drv");
 	if(!bt_wakelock) {
 		BT_LOG_PRT_ERR("%s: init bt_wakelock failed!\n", __func__);
 	}

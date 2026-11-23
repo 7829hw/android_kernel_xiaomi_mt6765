@@ -1162,7 +1162,7 @@ static int GPS_init(void)
 #endif
 	pr_warn("%s driver(major %d) installed.\n", GPS_DRIVER_NAME, GPS_major);
 
-	gps_wake_lock_ptr = wakeup_source_register("gpswakelock");
+	gps_wake_lock_ptr = wakeup_source_register(NULL, "gpswakelock");
 	if (!gps_wake_lock_ptr) {
 		pr_info("%s %d: init wakeup source fail!", __func__, __LINE__);
 		goto error;
