@@ -558,6 +558,24 @@ migrate_running_task(int this_cpu, struct task_struct *p, struct rq *target)
 }
 #endif
 
+static int check_freq_turning(void)
+{
+	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
+	unsigned long capacity_curr_little, capacity_curr_big;
+
+	if (rd->min_cap_orig_cpu < 0 || rd->max_cap_orig_cpu < 0)
+		return false;
+
+	capacity_curr_little = capacity_curr_of(rd->min_cap_orig_cpu);
+	capacity_curr_big = capacity_curr_of(rd->max_cap_orig_cpu);
+
+	if ((capacity_curr_little > cpu_eff_tp) &&
+			(capacity_curr_big <=  big_cpu_eff_tp))
+		return true;
+
+	return false;
+}
+
 #ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
 int __weak schedtune_task_capacity_min(struct task_struct *tsk)
 {
@@ -705,24 +723,6 @@ hmp_slowest_idle_prefer_pull(int this_cpu, struct task_struct **p,
 		*target = cpu_rq(backup_cpu);
 		return;
 	}
-}
-
-static int check_freq_turning(void)
-{
-	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
-	unsigned long capacity_curr_little, capacity_curr_big;
-
-	if (rd->min_cap_orig_cpu < 0 || rd->max_cap_orig_cpu < 0)
-		return false;
-
-	capacity_curr_little = capacity_curr_of(rd->min_cap_orig_cpu);
-	capacity_curr_big = capacity_curr_of(rd->max_cap_orig_cpu);
-
-	if ((capacity_curr_little > cpu_eff_tp) &&
-			(capacity_curr_big <=  big_cpu_eff_tp))
-		return true;
-
-	return false;
 }
 
 static void
