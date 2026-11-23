@@ -6399,7 +6399,11 @@ static inline unsigned long task_util(struct task_struct *p)
 
 static inline unsigned long task_uclamped_min(struct task_struct *p)
 {
+#ifdef CONFIG_UCLAMP_TASK
+	return uclamp_eff_value(p, UCLAMP_MIN);
+#else
 	return 0;
+#endif
 }
 
 static inline unsigned long task_uclamped_min_w_ceiling(struct task_struct *p)
