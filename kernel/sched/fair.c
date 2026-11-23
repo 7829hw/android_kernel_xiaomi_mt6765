@@ -7795,15 +7795,13 @@ select_task_rq_fair(struct task_struct *p,
 	int cpu;
 	bool prefer_idle = 0;
 
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-	prefer_idle = (schedtune_prefer_idle(p) > 0);
-#endif
+	prefer_idle = uclamp_latency_sensitive(p);
 	result = SELECT_TASK_RQ_FAIR(p, prev_cpu, sd_flag, wake_flags);
 	select_task_prefer_cpu_fair(p, &result);
 	cpu = (result & LB_CPU_MASK);
 
 	trace_sched_select_task_rq(p, result, prev_cpu, cpu,
-		task_util(p), boosted_task_util(p), prefer_idle, wake_flags);
+		task_util(p), uclamp_task(p), prefer_idle, wake_flags);
 	return cpu;
 
 }

@@ -108,11 +108,7 @@ static int
 __select_idle_sibling(struct task_struct *p, int prev_cpu, int new_cpu)
 {
 	if (sched_feat(SCHED_MTK_EAS)) {
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-		bool prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-		bool prefer_idle = true;
-#endif
+		bool prefer_idle = uclamp_latency_sensitive(p);
 		int idle_cpu;
 
 		idle_cpu = find_best_idle_cpu(p, prefer_idle);
