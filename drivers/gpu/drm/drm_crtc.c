@@ -433,6 +433,13 @@ static int drm_mode_create_standard_properties(struct drm_device *dev)
 		return -ENOMEM;
 	dev->mode_config.prop_out_fence_ptr = prop;
 
+	prop = drm_property_create(dev,
+			DRM_MODE_PROP_IMMUTABLE | DRM_MODE_PROP_BLOB,
+			"IN_FORMATS", 0);
+	if (!prop)
+		return -ENOMEM;
+	dev->mode_config.modifiers_property = prop;
+
 	prop = drm_property_create_object(dev, DRM_MODE_PROP_ATOMIC,
 			"CRTC_ID", DRM_MODE_OBJECT_CRTC);
 	if (!prop)
