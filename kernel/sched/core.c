@@ -107,7 +107,6 @@
 #include "mtk_mcdi_api.h"
 #include <linux/irqchip/mtk-gic-extend.h>
 
-#include <mt-plat/fpsgo_common.h>
 #include <mt-plat/l3cc_common.h>
 
 enum ipi_msg_type {
@@ -2983,9 +2982,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 	raw_spin_unlock(&rq->lock);
 
 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
-
-	fpsgo_update_render_dep(p);
-
 	p->state = TASK_WAKING;
 
 	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);

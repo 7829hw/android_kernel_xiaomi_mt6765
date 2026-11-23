@@ -14,8 +14,6 @@
 #ifndef _BOOST_CTRL_H
 #define _BOOST_CTRL_H
 
-#include "fpsgo_common.h"
-
 
 /*boost controller parent*/
 int init_boostctrl(struct proc_dir_entry *parent);
