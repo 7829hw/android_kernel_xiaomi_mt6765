@@ -49,14 +49,6 @@ void open_lockdep_if_need(int need);
 #endif
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
-#ifdef CONFIG_UCLAMP_TASK_GROUP
-extern int uclamp_group_get(struct task_struct *p,
-				   struct cgroup_subsys_state *css,
-				   int clamp_id, struct uclamp_se *uc_se,
-				   unsigned int clamp_value);
-extern void uclamp_group_put(int clamp_id, int group_id);
-extern struct mutex uclamp_mutex;
-#endif
 
 int schedtune_cpu_boost(int cpu);
 int schedtune_task_boost(struct task_struct *tsk);

@@ -12,10 +12,6 @@
  */
 #include <linux/sched_energy.h>
 #include <linux/cpufreq.h>
-#include <linux/sort.h>
-
-int opp_capacity_tbl_ready;
-unsigned int *opp_capacity;
 
 #ifdef CONFIG_MTK_UNIFY_POWER
 /*
@@ -33,117 +29,6 @@ static struct idle_state default_idle_states[] = {
 	{ .power = 0 }, /* 5: disabled */
 	{ .power = 0 }, /* 6: WFI/SPARK */
 };
-
-int total_opp_capacity;
-unsigned int find_fit_capacity(unsigned int cap)
-{
-	int i;
-
-	if (unlikely(!opp_capacity_tbl_ready))
-		return cap;
-
-	if (cap == 0)
-		return cap;
-
-	for (i = 0; i < total_opp_capacity; i++) {
-		if (opp_capacity[i] >= cap)
-			return opp_capacity[i];
-	}
-	return SCHED_CAPACITY_SCALE;
-}
-
-static int cap_compare(const void *lhs, const void *rhs)
-{
-	int lhs_cap = *(const unsigned int *)(lhs);
-	int rhs_cap = *(const unsigned int *)(rhs);
-
-	if (lhs_cap < rhs_cap)
-		return -1;
-	if (lhs_cap > rhs_cap)
-		return 1;
-	return 0;
-}
-
-void init_opp_capacity_tbl(void)
-{
-	int cpu, cid, prev_cid = -1;
-	int i, len = 0, idx = 0;
-	unsigned int max_freq, freq;
-	unsigned int orig_cap, cap;
-	struct sched_domain *sd;
-	struct sched_group *sg;
-	const struct sched_group_energy *sge;
-	struct cpufreq_policy *policy;
-
-	rcu_read_lock();
-	for (cpu = 0; cpu < nr_cpu_ids; cpu++) {
-		cid = arch_get_cluster_id(cpu);
-		if (cid == prev_cid)
-			continue;
-		sd = rcu_dereference(cpu_rq(cpu)->sd);
-		if (sd) {
-			sg = sd->groups;
-			sge = sg->sge;
-		} else{
-			pr_info("sched: %s no sd", __func__);
-			rcu_read_unlock();
-			return;
-		}
-
-		len += sge->nr_cap_states;
-		prev_cid = cid;
-	}
-	rcu_read_unlock();
-
-	prev_cid = -1;
-
-	total_opp_capacity = len;
-	opp_capacity = kmalloc_array(len, sizeof(unsigned int), GFP_KERNEL);
-	if (!opp_capacity)
-		return;
-
-	rcu_read_lock();
-	for (cpu = 0; cpu < nr_cpu_ids; cpu++) {
-		cid = arch_get_cluster_id(cpu);
-		if (cid == prev_cid)
-			continue;
-		sd = rcu_dereference(cpu_rq(cpu)->sd);
-		if (sd) {
-			sg = sd->groups;
-			sge = sg->sge;
-		} else{
-			pr_info("sched: %s no sd", __func__);
-			return;
-		}
-
-		policy = cpufreq_cpu_get(cpu);
-		if (!policy) {
-			pr_info("policy not ready\n");
-			goto err;
-		}
-		max_freq = arch_scale_get_max_freq(cpu);
-		orig_cap = sge->cap_states[sge->nr_cap_states - 1].cap;
-
-		/* get cpu opp to initial opp_capacity table */
-		for (i = 0; i < sge->nr_cap_states; i++) {
-			freq = policy->freq_table[i].frequency;
-			cap = orig_cap * freq / max_freq;
-			opp_capacity[idx++] = cap;
-		}
-		cpufreq_cpu_put(policy);
-		prev_cid = cid;
-	}
-	rcu_read_unlock();
-
-	sort(opp_capacity, total_opp_capacity, sizeof(unsigned int),
-			&cap_compare, NULL);
-	opp_capacity_tbl_ready = 1;
-
-	return;
-err:
-	rcu_read_unlock();
-	kfree(opp_capacity);
-}
 
 void init_sched_energy_costs(void)
 {
@@ -169,9 +54,6 @@ void init_sched_energy_costs(void)
 	return;
 
 }
-#else
-void init_opp_capacity_tbl(void) {}
-unsigned int find_fit_capacity(int cap) { return cap; }
 #endif
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
