@@ -980,7 +980,7 @@ int bpf_prog_test_run_syscall(struct bpf_prog *prog,
 	/* Linux 4.9 has no sleepable migrate_disable(). Loader programs use
 	 * no per-CPU state, so run without the normal per-CPU stats wrapper.
 	 */
-	retval = prog->bpf_func(ctx, prog->insnsi);
+	retval = bpf_dispatcher_nop_func(ctx, prog->insnsi, prog->bpf_func);
 
 	if (copy_to_user(&uattr->test.retval, &retval, sizeof(u32))) {
 		err = -EFAULT;
