@@ -15,7 +15,6 @@
 #define __GED_KPI_H__
 
 #include "ged_type.h"
-#include "eas_ctrl.h"
 #include <linux/sched.h>
 #include <linux/cpufreq.h>
 #include <linux/topology.h>
