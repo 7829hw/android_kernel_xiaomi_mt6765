@@ -326,15 +326,26 @@ static inline void cleanup_symbol_name(char *s)
 {
 	char *res;
 
+	res = strrchr(s, '.');
+	if (res && !strcmp(res, ".cfi"))
+		*res = '\0';
 #ifdef CONFIG_THINLTO
-	/* Filter out hashes from static functions */
+	/* Filter out promoted locals, name.llvm.<number> */
+	res = strstr(s, ".llvm.");
+	if (res)
+		*res = '\0';
+	/*
+	 * Filter out hashes from static functions: older clang appends
+	 * $<hash>, current clang .<32 hex digits>.
+	 */
+	res = strrchr(s, '.');
+	if (res && strlen(res + 1) == 32 &&
+	    strspn(res + 1, "0123456789abcdef") == 32)
+		*res = '\0';
 	res = strrchr(s, '$');
 	if (res)
 		*res = '\0';
 #endif
-	res = strrchr(s, '.');
-	if (res && !strcmp(res, ".cfi"))
-		*res = '\0';
 }
 #else
 static inline void cleanup_symbol_name(char *s) {}
