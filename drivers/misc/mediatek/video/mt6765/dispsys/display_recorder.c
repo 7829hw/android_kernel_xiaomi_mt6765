@@ -510,10 +510,17 @@ void dprec_logger_event_init(struct dprec_logger_event *p, char *name,
 unsigned long disp_get_tracing_mark(void)
 {
 	static unsigned long __read_mostly tracing_mark_write_addr;
+	static bool __read_mostly tracing_mark_write_looked_up;
 
-	if (unlikely(tracing_mark_write_addr == 0))
+	/*
+	 * A failed lookup walks the whole symbol table, and this is called
+	 * twice per layer on every display fence release; only try once.
+	 */
+	if (unlikely(!tracing_mark_write_looked_up)) {
 		tracing_mark_write_addr =
 			kallsyms_lookup_name("tracing_mark_write");
+		tracing_mark_write_looked_up = true;
+	}
 
 	return tracing_mark_write_addr;
 
@@ -1425,10 +1432,17 @@ unsigned int dprec_error_log_id;
 unsigned long disp_get_tracing_mark(void)
 {
 	static unsigned long __read_mostly tracing_mark_write_addr;
+	static bool __read_mostly tracing_mark_write_looked_up;
 
-	if (unlikely(tracing_mark_write_addr == 0))
+	/*
+	 * A failed lookup walks the whole symbol table, and this is called
+	 * twice per layer on every display fence release; only try once.
+	 */
+	if (unlikely(!tracing_mark_write_looked_up)) {
 		tracing_mark_write_addr =
-				kallsyms_lookup_name("tracing_mark_write");
+			kallsyms_lookup_name("tracing_mark_write");
+		tracing_mark_write_looked_up = true;
+	}
 
 	return tracing_mark_write_addr;
 
