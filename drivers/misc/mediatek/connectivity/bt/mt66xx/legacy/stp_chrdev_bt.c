@@ -348,6 +348,22 @@ OUT:
 	return retval;
 }
 
+/*
+ * The CONSYS controller lists Read/Write Default Erroneous Data Reporting
+ * (octet 18, bits 2 and 3) in Read_Local_Supported_Commands but rejects
+ * them with a Command Status, which the Android 14+ Bluetooth stack treats
+ * as fatal. Clear the two bits in the Command Complete event so the host
+ * does not send them.
+ */
+static void bt_fixup_supported_commands(PUINT8 pkt, INT32 len)
+{
+	/* H4 event, Command Complete, length 68, opcode 0x1002, success */
+	if (len >= 7 + 64 && pkt[0] == 0x04 && pkt[1] == 0x0e &&
+	    pkt[2] == 0x44 && pkt[4] == 0x02 && pkt[5] == 0x10 &&
+	    pkt[6] == 0x00)
+		pkt[7 + 18] &= ~0x0c;
+}
+
 ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	INT32 retval = 0;
@@ -434,6 +450,9 @@ ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos
 			}
 		}
 	}
+
+	if (retval > 0 && rstflag == 0)
+		bt_fixup_supported_commands(i_buf, retval);
 
 	if (copy_to_user(buf, i_buf, retval)) {
 		retval = -EFAULT;
