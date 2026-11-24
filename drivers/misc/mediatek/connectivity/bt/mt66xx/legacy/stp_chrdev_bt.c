@@ -354,14 +354,65 @@ OUT:
  * them with a Command Status, which the Android 14+ Bluetooth stack treats
  * as fatal. Clear the two bits in the Command Complete event so the host
  * does not send them.
+ *
+ * The HAL may read an H4 packet in several pieces, so follow the packet
+ * boundaries of the stream read from /dev/stpbt.
  */
-static void bt_fixup_supported_commands(PUINT8 pkt, INT32 len)
+static struct {
+	UINT32 pos;	/* bytes of the current packet seen so far */
+	UINT32 total;	/* its full length, once the header is complete */
+	UINT8 hdr[7];	/* type, header and the first parameters */
+} bt_rx;
+
+static void bt_rx_reset(void)
 {
-	/* H4 event, Command Complete, length 68, opcode 0x1002, success */
-	if (len >= 7 + 64 && pkt[0] == 0x04 && pkt[1] == 0x0e &&
-	    pkt[2] == 0x44 && pkt[4] == 0x02 && pkt[5] == 0x10 &&
-	    pkt[6] == 0x00)
-		pkt[7 + 18] &= ~0x0c;
+	bt_rx.pos = 0;
+	bt_rx.total = 0;
+}
+
+static void bt_fixup_supported_commands(PUINT8 buf, INT32 len)
+{
+	static const UINT8 lsc[7] = {
+		0x04, 0x0e, 0x44, 0x00, 0x02, 0x10, 0x00	/* [3]: ncmd */
+	};
+	INT32 i;
+
+	for (i = 0; i < len; i++) {
+		UINT32 hlen;
+
+		if (bt_rx.pos < sizeof(bt_rx.hdr))
+			bt_rx.hdr[bt_rx.pos] = buf[i];
+		/* Octet 18 of the supported commands: 7 header bytes + 18 */
+		if (bt_rx.pos == 7 + 18 && bt_rx.hdr[0] == lsc[0] &&
+		    bt_rx.hdr[1] == lsc[1] && bt_rx.hdr[2] == lsc[2] &&
+		    bt_rx.hdr[4] == lsc[4] && bt_rx.hdr[5] == lsc[5] &&
+		    bt_rx.hdr[6] == lsc[6])
+			buf[i] &= ~0x0c;
+		bt_rx.pos++;
+
+		switch (bt_rx.hdr[0]) {
+		case 0x04:	/* event: type, code, len */
+			hlen = 3;
+			if (bt_rx.pos == hlen)
+				bt_rx.total = hlen + bt_rx.hdr[2];
+			break;
+		case 0x02:	/* ACL: type, handle(2), len(2) */
+			hlen = 5;
+			if (bt_rx.pos == hlen)
+				bt_rx.total = hlen + (bt_rx.hdr[3] | bt_rx.hdr[4] << 8);
+			break;
+		case 0x03:	/* SCO: type, handle(2), len */
+			hlen = 4;
+			if (bt_rx.pos == hlen)
+				bt_rx.total = hlen + bt_rx.hdr[3];
+			break;
+		default:	/* not H4 or lost sync: start over */
+			bt_rx_reset();
+			continue;
+		}
+		if (bt_rx.pos >= hlen && bt_rx.pos >= bt_rx.total)
+			bt_rx_reset();
+	}
 }
 
 ssize_t BT_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
@@ -538,6 +589,7 @@ static int BT_open(struct inode *inode, struct file *file)
 	}
 
 	BT_LOG_PRT_INFO("WMT turn on BT OK!\n");
+	bt_rx_reset();
 
 	if (mtk_wcn_stp_is_ready() == MTK_WCN_BOOL_FALSE) {
 
