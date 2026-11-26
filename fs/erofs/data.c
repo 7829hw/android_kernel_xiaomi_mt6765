@@ -5,6 +5,7 @@
  */
 #include "internal.h"
 #include <linux/prefetch.h>
+#include <linux/uio.h>
 
 #include <trace/events/erofs.h>
 
@@ -326,9 +327,54 @@ static sector_t erofs_bmap(struct address_space *mapping, sector_t block)
 	return 0;
 }
 
+static int erofs_get_block(struct inode *inode, sector_t iblock,
+			   struct buffer_head *bh, int create)
+{
+	struct erofs_map_blocks map = {
+		.m_la = (erofs_off_t)iblock << inode->i_blkbits,
+	};
+	int err;
+
+	err = erofs_map_blocks_flatmode(inode, &map, EROFS_GET_BLOCKS_RAW);
+	if (err)
+		return err;
+
+	/* past EOF; erofs_direct_IO() keeps the inline tail out of reach */
+	if (!(map.m_flags & EROFS_MAP_MAPPED) || (map.m_flags & EROFS_MAP_META))
+		return 0;
+
+	map_bh(bh, inode->i_sb, erofs_blknr(map.m_pa));
+	bh->b_size = min_t(u64, bh->b_size, map.m_plen);
+	return 0;
+}
+
+static ssize_t erofs_direct_IO(struct kiocb *iocb, struct iov_iter *iter)
+{
+	struct inode *inode = file_inode(iocb->ki_filp);
+	struct erofs_inode *vi = EROFS_I(inode);
+
+	if (iov_iter_rw(iter) != READ)
+		return -EINVAL;
+
+	/*
+	 * The inline tail lives in the metadata block, not at a block
+	 * address of its own.  Returning 0 makes generic_file_read_iter()
+	 * serve any read that touches it from the page cache instead.
+	 */
+	if (vi->datalayout == EROFS_INODE_FLAT_INLINE &&
+	    iocb->ki_pos + iov_iter_count(iter) >
+	    blknr_to_addr(DIV_ROUND_UP(i_size_read(inode), EROFS_BLKSIZ) - 1))
+		return 0;
+
+	/* read-only: no DIO_LOCKING needed against writers */
+	return __blockdev_direct_IO(iocb, inode, inode->i_sb->s_bdev, iter,
+				    erofs_get_block, NULL, NULL, 0);
+}
+
 /* for uncompressed (aligned) files and raw access for other files */
 const struct address_space_operations erofs_raw_access_aops = {
 	.readpage = erofs_raw_access_readpage,
 	.readpages = erofs_raw_access_readpages,
 	.bmap = erofs_bmap,
+	.direct_IO = erofs_direct_IO,
 };
