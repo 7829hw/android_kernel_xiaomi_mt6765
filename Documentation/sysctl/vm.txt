@@ -795,6 +795,11 @@ decrease the amount of swap.  A value of 0 instructs the kernel not to
 initiate swap until the amount of free and file-backed pages is less
 than the high water mark in a zone.
 
+The value ranges from 0 to 200. At 100 anonymous and file pages are
+reclaimed with equal priority; values above 100 make the kernel prefer
+swapping anonymous memory over dropping the file cache, which helps when
+the swap device (such as zram) is faster than reading the file pages back.
+
 The default value is 60.
 
 ==============================================================
